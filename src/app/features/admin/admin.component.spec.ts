@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { vi } from 'vitest';
 import { AdminComponent } from './admin.component';
 import { AdminUsersService } from '../../core/services/admin-users.service';
+import { AdminStatsService, AdminStats } from '../../core/services/admin-stats.service';
 import { CampgroundAttributesService } from '../../core/services/campground-attributes.service';
 import { CampgroundsService } from '../../core/services/campgrounds.service';
 import { AdminUser } from '../../core/models/admin-user.model';
@@ -9,7 +10,9 @@ import { CampgroundAttribute } from '../../core/models/campground-attribute.mode
 import { signal } from '@angular/core';
 
 describe('AdminComponent', () => {
-  function setup(overrides: { users?: AdminUser[]; attributes?: CampgroundAttribute[] } = {}) {
+  function setup(
+    overrides: { users?: AdminUser[]; attributes?: CampgroundAttribute[]; stats?: AdminStats | null } = {},
+  ) {
     const loadUsersSpy = vi.fn().mockResolvedValue(undefined);
     const updateRoleSpy = vi.fn().mockResolvedValue(undefined);
     const setSuspendedSpy = vi.fn().mockResolvedValue(undefined);
@@ -20,6 +23,8 @@ describe('AdminComponent', () => {
     const updateAttributeSpy = vi.fn().mockResolvedValue(undefined);
     const deleteAttributeSpy = vi.fn().mockResolvedValue(undefined);
     const searchByNameSpy = vi.fn().mockResolvedValue([{ id: 'cg-1', name: 'Blackwoods Campground' }]);
+    const loadStatsSpy = vi.fn().mockResolvedValue(undefined);
+    const statsSignal = signal<AdminStats | null>(overrides.stats ?? null);
 
     TestBed.configureTestingModule({
       imports: [AdminComponent],
@@ -33,6 +38,10 @@ describe('AdminComponent', () => {
             setSuspended: setSuspendedSpy,
             deleteUser: deleteUserSpy,
           },
+        },
+        {
+          provide: AdminStatsService,
+          useValue: { stats: statsSignal, loadStats: loadStatsSpy },
         },
         {
           provide: CampgroundAttributesService,
@@ -60,6 +69,7 @@ describe('AdminComponent', () => {
       updateAttributeSpy,
       deleteAttributeSpy,
       searchByNameSpy,
+      loadStatsSpy,
     };
   }
 
@@ -82,6 +92,25 @@ describe('AdminComponent', () => {
     await component.ngOnInit();
 
     expect(component.usersError()).toBe('boom');
+  });
+
+  it('loads site stats on init', async () => {
+    const { component, loadStatsSpy } = setup({ stats: { favoritesCount: 42, tripsCount: 7 } });
+
+    await component.ngOnInit();
+
+    expect(loadStatsSpy).toHaveBeenCalled();
+    expect(component.stats()).toEqual({ favoritesCount: 42, tripsCount: 7 });
+  });
+
+  it('shows an error if loading stats fails, without blocking the users list', async () => {
+    const { component, loadStatsSpy } = setup({ users: [user] });
+    loadStatsSpy.mockRejectedValue(new Error('not authorized'));
+
+    await component.ngOnInit();
+
+    expect(component.statsError()).toBe('not authorized');
+    expect(component.users()).toEqual([user]);
   });
 
   it('changes a role', async () => {

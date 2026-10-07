@@ -1,5 +1,21 @@
 <h1>Admin</h1>
 
+@if (statsError()) {
+  <p-message severity="error">{{ statsError() }}</p-message>
+}
+@if (stats(); as s) {
+  <div class="admin-stats">
+    <div class="admin-stat">
+      <span class="admin-stat-value">{{ s.favoritesCount }}</span>
+      <span class="admin-stat-label">Favorites</span>
+    </div>
+    <div class="admin-stat">
+      <span class="admin-stat-value">{{ s.tripsCount }}</span>
+      <span class="admin-stat-label">Trips</span>
+    </div>
+  </div>
+}
+
 <p-tabs value="0">
   <p-tablist>
     <p-tab value="0">Users</p-tab>

@@ -9,6 +9,7 @@ import { MessageModule } from 'primeng/message';
 import { InputTextModule } from 'primeng/inputtext';
 import { AutoCompleteModule, AutoCompleteCompleteEvent, AutoCompleteSelectEvent } from 'primeng/autocomplete';
 import { AdminUsersService } from '../../core/services/admin-users.service';
+import { AdminStatsService } from '../../core/services/admin-stats.service';
 import { CampgroundAttributesService } from '../../core/services/campground-attributes.service';
 import { CampgroundsService } from '../../core/services/campgrounds.service';
 import { AdminUser } from '../../core/models/admin-user.model';
@@ -30,20 +31,54 @@ interface CampgroundOption {
   standalone: true,
   imports: [DatePipe, FormsModule, TableModule, TabsModule, SelectModule, ButtonModule, MessageModule, InputTextModule, AutoCompleteModule],
   templateUrl: './admin.component.html',
+  styles: `
+    .admin-stats {
+      display: flex;
+      gap: 2rem;
+      margin-bottom: 1rem;
+    }
+    .admin-stat {
+      display: flex;
+      flex-direction: column;
+    }
+    .admin-stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+    .admin-stat-label {
+      color: var(--p-text-muted-color);
+      font-size: 0.85rem;
+    }
+  `,
 })
 export class AdminComponent implements OnInit {
   private readonly adminUsersService = inject(AdminUsersService);
+  private readonly adminStatsService = inject(AdminStatsService);
 
   readonly roleOptions = ROLE_OPTIONS;
   readonly users = this.adminUsersService.users;
   readonly usersError = signal<string | null>(null);
   readonly confirmingDeleteUserId = signal<string | null>(null);
+  readonly stats = this.adminStatsService.stats;
+  readonly statsError = signal<string | null>(null);
 
   async ngOnInit(): Promise<void> {
+    await Promise.all([this.loadUsers(), this.loadStats()]);
+  }
+
+  private async loadUsers(): Promise<void> {
     try {
       await this.adminUsersService.loadUsers();
     } catch (err) {
       this.usersError.set(err instanceof Error ? err.message : 'Could not load users.');
+    }
+  }
+
+  private async loadStats(): Promise<void> {
+    try {
+      await this.adminStatsService.loadStats();
+    } catch (err) {
+      this.statsError.set(err instanceof Error ? err.message : 'Could not load site stats.');
     }
   }
 
