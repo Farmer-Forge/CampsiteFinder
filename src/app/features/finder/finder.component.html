@@ -5,11 +5,22 @@
 
   @if (error()) {
     <p-message severity="warn">{{ error() }}</p-message>
+    @if (locationBlocked()) {
+      <p-message severity="info">
+        Location is blocked for this site. Check your browser's address-bar site settings to allow it, then try again.
+      </p-message>
+    } @else {
+      <button pButton type="button" [text]="true" (click)="onRetryLocation()">Try location again</button>
+    }
     <form class="manual-location" (ngSubmit)="onManualSubmit()">
-      <input pInputText type="number" step="any" placeholder="Latitude" [(ngModel)]="manualLat" name="manualLat" required />
-      <input pInputText type="number" step="any" placeholder="Longitude" [(ngModel)]="manualLng" name="manualLng" required />
+      <input pInputText type="number" step="any" placeholder="Latitude (e.g. 44.31)" [(ngModel)]="manualLat" name="manualLat" required />
+      <input pInputText type="number" step="any" placeholder="Longitude (e.g. -68.21)" [(ngModel)]="manualLng" name="manualLng" required />
       <button pButton type="submit">Search this location</button>
     </form>
+    <p class="manual-location-help">
+      Don't know your coordinates? Search "[your city] coordinates" or right-click your location in
+      <a href="https://maps.google.com" target="_blank" rel="noopener">Google Maps</a> and copy the two numbers shown.
+    </p>
   }
 
   @if (!error()) {

@@ -41,6 +41,9 @@ export class FinderComponent implements OnInit {
   readonly selected = signal<Campground | null>(null);
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
+  // True only once the browser permission is known to be explicitly 'denied'
+  // — that's the one state a "Try again" button can't do anything about.
+  readonly locationBlocked = signal(false);
 
   readonly ALL_AGENCIES = ['NPS', 'USFS', 'BLM', 'USACE', 'FWS'];
   readonly RADIUS_OPTIONS = [25, 50, 100, 250];
@@ -91,6 +94,9 @@ export class FinderComponent implements OnInit {
   async loadNearest(coords?: Coordinates): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
+    if (!coords) {
+      this.locationBlocked.set(false);
+    }
     try {
       const location = coords ?? (await this.geolocation.getCurrentPosition());
       this.lastCoords = location;
@@ -116,6 +122,13 @@ export class FinderComponent implements OnInit {
       this.campgrounds.set(results);
     } catch (err) {
       this.error.set(err instanceof Error ? err.message : 'Unable to load nearby campgrounds.');
+      // Only a failed *browser* lookup implies anything about site
+      // permission — a manually submitted location failing (e.g. a network
+      // error) has nothing to do with geolocation.
+      if (!coords) {
+        const state = await this.geolocation.checkPermissionState();
+        this.locationBlocked.set(state === 'denied');
+      }
     } finally {
       this.loading.set(false);
     }
@@ -125,6 +138,10 @@ export class FinderComponent implements OnInit {
     if (this.manualLat != null && this.manualLng != null) {
       this.loadNearest({ lat: this.manualLat, lng: this.manualLng });
     }
+  }
+
+  onRetryLocation(): Promise<void> {
+    return this.loadNearest();
   }
 
   onFilterChange(): Promise<void> {

@@ -7,11 +7,14 @@ import { CampgroundsService } from '../../core/services/campgrounds.service';
 describe('FinderComponent', () => {
   let fixture: ComponentFixture<FinderComponent>;
   let component: FinderComponent;
-  let geolocationSpy: { getCurrentPosition: ReturnType<typeof vi.fn> };
+  let geolocationSpy: { getCurrentPosition: ReturnType<typeof vi.fn>; checkPermissionState: ReturnType<typeof vi.fn> };
   let campgroundsSpy: { getNearest: ReturnType<typeof vi.fn>; getParkCodes: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
-    geolocationSpy = { getCurrentPosition: vi.fn() };
+    geolocationSpy = {
+      getCurrentPosition: vi.fn(),
+      checkPermissionState: vi.fn().mockResolvedValue('unsupported'),
+    };
     campgroundsSpy = { getNearest: vi.fn(), getParkCodes: vi.fn().mockResolvedValue([]) };
 
     TestBed.configureTestingModule({
@@ -43,6 +46,45 @@ describe('FinderComponent', () => {
 
     expect(component.error()).toBe('denied');
     expect(component.loading()).toBe(false);
+  });
+
+  it('flags location as blocked when the browser permission is denied', async () => {
+    geolocationSpy.getCurrentPosition.mockRejectedValue(new Error('denied'));
+    geolocationSpy.checkPermissionState.mockResolvedValue('denied');
+
+    await component.ngOnInit();
+
+    expect(component.locationBlocked()).toBe(true);
+  });
+
+  it('does not flag location as blocked when permission is merely undecided', async () => {
+    geolocationSpy.getCurrentPosition.mockRejectedValue(new Error('dismissed'));
+    geolocationSpy.checkPermissionState.mockResolvedValue('prompt');
+
+    await component.ngOnInit();
+
+    expect(component.locationBlocked()).toBe(false);
+  });
+
+  it('retries the browser location lookup on demand', async () => {
+    geolocationSpy.getCurrentPosition.mockRejectedValue(new Error('denied'));
+    await component.ngOnInit();
+    expect(component.error()).toBe('denied');
+
+    geolocationSpy.getCurrentPosition.mockResolvedValue({ lat: 44.3, lng: -68.2 });
+    campgroundsSpy.getNearest.mockResolvedValue([{ id: '1', name: 'A' } as any]);
+    await component.onRetryLocation();
+
+    expect(component.error()).toBeNull();
+    expect(component.campgrounds().length).toBe(1);
+  });
+
+  it('does not check permission state for a manually submitted location', async () => {
+    campgroundsSpy.getNearest.mockRejectedValue(new Error('network down'));
+
+    await component.loadNearest({ lat: 10, lng: 20 });
+
+    expect(geolocationSpy.checkPermissionState).not.toHaveBeenCalled();
   });
 
   it('defaults to all agencies selected', () => {
