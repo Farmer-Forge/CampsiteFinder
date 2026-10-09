@@ -79,6 +79,41 @@ describe('FinderComponent', () => {
     expect(component.campgrounds().length).toBe(1);
   });
 
+  it('publishes the resolved coordinates as the search location', async () => {
+    geolocationSpy.getCurrentPosition.mockResolvedValue({ lat: 44.3, lng: -68.2 });
+    campgroundsSpy.getNearest.mockResolvedValue([]);
+
+    await component.ngOnInit();
+
+    expect(component.searchLocation()).toEqual({ lat: 44.3, lng: -68.2 });
+  });
+
+  it('starts with the location-change form hidden', () => {
+    expect(component.showLocationForm()).toBe(false);
+  });
+
+  it('toggles the location-change form', () => {
+    component.onToggleLocationForm();
+    expect(component.showLocationForm()).toBe(true);
+
+    component.onToggleLocationForm();
+    expect(component.showLocationForm()).toBe(false);
+  });
+
+  it('closes the location-change form after a manual submit', async () => {
+    campgroundsSpy.getNearest.mockResolvedValue([]);
+    component.onToggleLocationForm();
+    component.manualLat = 10;
+    component.manualLng = 20;
+
+    component.onManualSubmit();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(component.showLocationForm()).toBe(false);
+    expect(component.searchLocation()).toEqual({ lat: 10, lng: 20 });
+  });
+
   it('does not check permission state for a manually submitted location', async () => {
     campgroundsSpy.getNearest.mockRejectedValue(new Error('network down'));
 

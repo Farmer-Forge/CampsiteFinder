@@ -106,6 +106,128 @@ describe('AdminUsersService', () => {
     await expect(service.setSuspended('user-1', true)).rejects.toThrow('boom');
   });
 
+  it("updates a user's display name and reflects it locally", async () => {
+    service.users.set([
+      {
+        id: 'user-1',
+        email: 'alex@example.com',
+        displayName: 'Alex',
+        role: 'user',
+        suspended: false,
+        createdAt: '2026-08-01T00:00:00Z',
+      },
+    ]);
+    rpcSpy.mockResolvedValue({ data: null, error: null });
+
+    await service.updateDisplayName('user-1', 'Alexandra');
+
+    expect(rpcSpy).toHaveBeenCalledWith('admin_update_user_display_name', {
+      target_user_id: 'user-1',
+      new_display_name: 'Alexandra',
+    });
+    expect(service.users()[0].displayName).toBe('Alexandra');
+  });
+
+  it('throws when updateDisplayName errors', async () => {
+    rpcSpy.mockResolvedValue({ data: null, error: new Error('boom') });
+
+    await expect(service.updateDisplayName('user-1', 'Alexandra')).rejects.toThrow('boom');
+  });
+
+  it("updates a user's email via the admin-update-user-email function and reflects it locally", async () => {
+    service.users.set([
+      {
+        id: 'user-1',
+        email: 'alex@example.com',
+        displayName: 'Alex',
+        role: 'user',
+        suspended: false,
+        createdAt: '2026-08-01T00:00:00Z',
+      },
+    ]);
+    invokeSpy.mockResolvedValue({ error: null });
+
+    await service.updateEmail('user-1', 'alexandra@example.com');
+
+    expect(invokeSpy).toHaveBeenCalledWith('admin-update-user-email', {
+      body: { target_user_id: 'user-1', new_email: 'alexandra@example.com' },
+    });
+    expect(service.users()[0].email).toBe('alexandra@example.com');
+  });
+
+  it('throws when updateEmail errors', async () => {
+    invokeSpy.mockResolvedValue({ error: new Error('boom') });
+
+    await expect(service.updateEmail('user-1', 'alexandra@example.com')).rejects.toThrow('boom');
+  });
+
+  it('surfaces the Edge Function response body when updateEmail gets a FunctionsHttpError', async () => {
+    invokeSpy.mockResolvedValue({
+      error: new FunctionsHttpError({ text: () => Promise.resolve('Email already in use') }),
+    });
+
+    await expect(service.updateEmail('user-1', 'taken@example.com')).rejects.toThrow('Email already in use');
+  });
+
+  it('invites a new user via the admin-invite-user function and reloads the user list', async () => {
+    invokeSpy.mockResolvedValue({ error: null });
+    rpcSpy.mockResolvedValue({
+      data: [
+        {
+          id: 'user-2',
+          email: 'new@example.com',
+          display_name: 'New Person',
+          role: 'user',
+          suspended: false,
+          created_at: '2026-09-01T00:00:00Z',
+        },
+      ],
+      error: null,
+    });
+
+    await service.inviteUser('new@example.com', 'New Person');
+
+    expect(invokeSpy).toHaveBeenCalledWith('admin-invite-user', {
+      body: { email: 'new@example.com', display_name: 'New Person' },
+    });
+    expect(rpcSpy).toHaveBeenCalledWith('get_users_for_admin');
+    expect(service.users()).toEqual([
+      {
+        id: 'user-2',
+        email: 'new@example.com',
+        displayName: 'New Person',
+        role: 'user',
+        suspended: false,
+        createdAt: '2026-09-01T00:00:00Z',
+      },
+    ]);
+  });
+
+  it('invites a new user without a display name', async () => {
+    invokeSpy.mockResolvedValue({ error: null });
+    rpcSpy.mockResolvedValue({ data: [], error: null });
+
+    await service.inviteUser('new@example.com');
+
+    expect(invokeSpy).toHaveBeenCalledWith('admin-invite-user', {
+      body: { email: 'new@example.com', display_name: null },
+    });
+  });
+
+  it('throws when inviteUser errors', async () => {
+    invokeSpy.mockResolvedValue({ error: new Error('boom') });
+
+    await expect(service.inviteUser('new@example.com')).rejects.toThrow('boom');
+  });
+
+  it('surfaces the Edge Function response body when inviteUser gets a FunctionsHttpError', async () => {
+    invokeSpy.mockResolvedValue({
+      error: new FunctionsHttpError({ text: () => Promise.resolve('Email already registered') }),
+    });
+
+    await expect(service.inviteUser('taken@example.com')).rejects.toThrow('Email already registered');
+  });
+
   it('deletes a user via the admin-delete-account function and removes it locally', async () => {
     service.users.set([
       {

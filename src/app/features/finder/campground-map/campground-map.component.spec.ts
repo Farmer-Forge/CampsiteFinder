@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { vi } from 'vitest';
+import * as L from 'leaflet';
 import { CampgroundMapComponent } from './campground-map.component';
 import { TripsService } from '../../../core/services/trips.service';
 import { SupabaseService } from '../../../core/services/supabase.service';
@@ -159,7 +160,7 @@ describe('CampgroundMapComponent', () => {
     component.ngOnChanges({ campgrounds: {} as any, ordered: {} as any });
 
     expect(component.markerLayers.length).toBe(2);
-    expect(component.routeLayers.length).toBe(1);
+    expect(component.overlayLayers.length).toBe(1);
   });
 
   it('does not add a route line for a single-stop ordered trip', () => {
@@ -263,6 +264,71 @@ describe('CampgroundMapComponent', () => {
       component.ngOnChanges({ campgrounds: {} as any, ordered: {} as any }),
     ).not.toThrow();
     expect(component.markerLayers.length).toBe(2);
-    expect(component.routeLayers.length).toBe(1);
+    expect(component.overlayLayers.length).toBe(1);
+  });
+
+  it('centers and zooms the map on the search location', () => {
+    component.searchLocation = { lat: 44.3, lng: -68.2 };
+
+    component.ngOnChanges({ searchLocation: {} as any });
+
+    expect(component.mapCenter?.lat).toBe(44.3);
+    expect(component.mapCenter?.lng).toBe(-68.2);
+    expect(component.mapZoom).toBe(9);
+  });
+
+  it('adds a "you are here" marker for the search location', () => {
+    component.searchLocation = { lat: 44.3, lng: -68.2 };
+
+    component.ngOnChanges({ searchLocation: {} as any });
+
+    expect(component.overlayLayers.length).toBe(1);
+    const marker = component.overlayLayers[0] as L.Marker;
+    expect(marker.getLatLng().lat).toBe(44.3);
+    expect(marker.getLatLng().lng).toBe(-68.2);
+  });
+
+  it('removes the "you are here" marker when the search location is cleared', () => {
+    component.searchLocation = { lat: 44.3, lng: -68.2 };
+    component.ngOnChanges({ searchLocation: {} as any });
+
+    component.searchLocation = null;
+    component.ngOnChanges({ searchLocation: {} as any });
+
+    expect(component.overlayLayers.length).toBe(0);
+  });
+
+  it('keeps the "you are here" marker when campgrounds change independently', () => {
+    component.searchLocation = { lat: 44.3, lng: -68.2 };
+    component.ngOnChanges({ searchLocation: {} as any });
+
+    component.campgrounds = [{ id: '1', lat: 45.0, lng: -69.0, name: 'A' } as any];
+    component.ngOnChanges({ campgrounds: {} as any });
+
+    expect(component.overlayLayers.length).toBe(1);
+  });
+
+  it('keeps the route line alongside the "you are here" marker in ordered mode', () => {
+    component.campgrounds = [
+      { id: '1', lat: 44.3, lng: -68.2, name: 'A' } as any,
+      { id: '2', lat: 45.0, lng: -69.0, name: 'B' } as any,
+    ];
+    component.ordered = true;
+    component.ngOnChanges({ campgrounds: {} as any, ordered: {} as any });
+
+    component.searchLocation = { lat: 44.0, lng: -68.0 };
+    component.ngOnChanges({ searchLocation: {} as any });
+
+    expect(component.overlayLayers.length).toBe(2);
+  });
+
+  it('does not move the map when the search location is absent', () => {
+    const defaultCenter = component.mapCenter;
+    const defaultZoom = component.mapZoom;
+
+    component.ngOnChanges({ searchLocation: {} as any });
+
+    expect(component.mapCenter).toBe(defaultCenter);
+    expect(component.mapZoom).toBe(defaultZoom);
   });
 });

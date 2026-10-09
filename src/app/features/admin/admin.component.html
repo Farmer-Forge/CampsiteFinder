@@ -26,6 +26,11 @@
       @if (usersError()) {
         <p-message severity="error">{{ usersError() }}</p-message>
       }
+      <form class="add-user-form" (ngSubmit)="onInviteUser()">
+        <input pInputText type="email" placeholder="Email" [(ngModel)]="newUserEmail" name="newUserEmail" required />
+        <input pInputText type="text" placeholder="Display name (optional)" [(ngModel)]="newUserDisplayName" name="newUserDisplayName" />
+        <button pButton type="submit">Invite User</button>
+      </form>
       <p-table [value]="users()">
         <ng-template #header>
           <tr>
@@ -39,8 +44,13 @@
         </ng-template>
         <ng-template #body let-user>
           <tr>
-            <td>{{ user.email }}</td>
-            <td>{{ user.displayName }}</td>
+            @if (editingUserId() === user.id) {
+              <td><input pInputText type="email" [(ngModel)]="editEmail" /></td>
+              <td><input pInputText type="text" [(ngModel)]="editDisplayName" /></td>
+            } @else {
+              <td>{{ user.email }}</td>
+              <td>{{ user.displayName }}</td>
+            }
             <td>
               <p-select
                 [ngModel]="user.role"
@@ -60,7 +70,11 @@
               @if (confirmingDeleteUserId() === user.id) {
                 <button pButton [text]="true" (click)="onCancelDeleteUser()">Cancel</button>
                 <button pButton severity="danger" (click)="onConfirmDeleteUser(user.id)">Yes, delete</button>
+              } @else if (editingUserId() === user.id) {
+                <button pButton [text]="true" (click)="onCancelEditUser()">Cancel</button>
+                <button pButton (click)="onSaveEditUser(user)">Save</button>
               } @else {
+                <button pButton [text]="true" (click)="onStartEditUser(user)">Edit</button>
                 <button pButton severity="danger" [text]="true" (click)="onDeleteUser(user.id)">Delete</button>
               }
             </td>

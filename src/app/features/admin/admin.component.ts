@@ -49,6 +49,11 @@ interface CampgroundOption {
       color: var(--p-text-muted-color);
       font-size: 0.85rem;
     }
+    .add-user-form {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
   `,
 })
 export class AdminComponent implements OnInit {
@@ -61,6 +66,13 @@ export class AdminComponent implements OnInit {
   readonly confirmingDeleteUserId = signal<string | null>(null);
   readonly stats = this.adminStatsService.stats;
   readonly statsError = signal<string | null>(null);
+
+  newUserEmail = '';
+  newUserDisplayName = '';
+
+  readonly editingUserId = signal<string | null>(null);
+  editDisplayName = '';
+  editEmail = '';
 
   async ngOnInit(): Promise<void> {
     await Promise.all([this.loadUsers(), this.loadStats()]);
@@ -116,6 +128,44 @@ export class AdminComponent implements OnInit {
       this.confirmingDeleteUserId.set(null);
     } catch (err) {
       this.usersError.set(err instanceof Error ? err.message : 'Could not delete user.');
+    }
+  }
+
+  async onInviteUser(): Promise<void> {
+    const email = this.newUserEmail.trim();
+    if (email === '') return;
+    this.usersError.set(null);
+    try {
+      await this.adminUsersService.inviteUser(email, this.newUserDisplayName.trim() || undefined);
+      this.newUserEmail = '';
+      this.newUserDisplayName = '';
+    } catch (err) {
+      this.usersError.set(err instanceof Error ? err.message : 'Could not invite user.');
+    }
+  }
+
+  onStartEditUser(user: AdminUser): void {
+    this.editingUserId.set(user.id);
+    this.editDisplayName = user.displayName;
+    this.editEmail = user.email;
+  }
+
+  onCancelEditUser(): void {
+    this.editingUserId.set(null);
+  }
+
+  async onSaveEditUser(user: AdminUser): Promise<void> {
+    this.usersError.set(null);
+    try {
+      if (this.editDisplayName !== user.displayName) {
+        await this.adminUsersService.updateDisplayName(user.id, this.editDisplayName);
+      }
+      if (this.editEmail !== user.email) {
+        await this.adminUsersService.updateEmail(user.id, this.editEmail);
+      }
+      this.editingUserId.set(null);
+    } catch (err) {
+      this.usersError.set(err instanceof Error ? err.message : 'Could not update user.');
     }
   }
 

@@ -32,18 +32,45 @@ export class AdminUsersService {
     this.users.update((users) => users.map((u) => (u.id === userId ? { ...u, suspended } : u)));
   }
 
-  async deleteUser(userId: string): Promise<void> {
-    const { error } = await this.supabase.client.functions.invoke('admin-delete-account', {
-      body: { target_user_id: userId },
+  async updateDisplayName(userId: string, displayName: string): Promise<void> {
+    const { error } = await this.supabase.client.rpc('admin_update_user_display_name', {
+      target_user_id: userId,
+      new_display_name: displayName,
     });
+    if (error) throw error;
+    this.users.update((users) => users.map((u) => (u.id === userId ? { ...u, displayName } : u)));
+  }
+
+  async updateEmail(userId: string, email: string): Promise<void> {
+    await this.invokeAdminFunction('admin-update-user-email', { target_user_id: userId, new_email: email });
+    this.users.update((users) => users.map((u) => (u.id === userId ? { ...u, email } : u)));
+  }
+
+  // Edge Function rather than a table write — inviteUserByEmail creates the
+  // auth.users row and sends the invite email, neither of which anything in
+  // public schema can do.
+  async inviteUser(email: string, displayName?: string): Promise<void> {
+    await this.invokeAdminFunction('admin-invite-user', { email, display_name: displayName ?? null });
+    // The new user's id/createdAt only exist on the server side once
+    // auth.users + the handle_new_user trigger have run, so pick them up by
+    // reloading rather than trying to reconstruct the row here.
+    await this.loadUsers();
+  }
+
+  async deleteUser(userId: string): Promise<void> {
+    await this.invokeAdminFunction('admin-delete-account', { target_user_id: userId });
+    this.users.update((users) => users.filter((u) => u.id !== userId));
+  }
+
+  private async invokeAdminFunction(name: string, body: Record<string, unknown>): Promise<void> {
+    const { error } = await this.supabase.client.functions.invoke(name, { body });
     if (error) {
       if (error instanceof FunctionsHttpError) {
-        const body = await error.context.text();
-        throw new Error(body || error.message);
+        const responseBody = await error.context.text();
+        throw new Error(responseBody || error.message);
       }
       throw error;
     }
-    this.users.update((users) => users.filter((u) => u.id !== userId));
   }
 }
 

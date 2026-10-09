@@ -12,6 +12,9 @@
     } @else {
       <button pButton type="button" [text]="true" (click)="onRetryLocation()">Try location again</button>
     }
+  }
+
+  @if (error() || showLocationForm()) {
     <form class="manual-location" (ngSubmit)="onManualSubmit()">
       <input pInputText type="number" step="any" placeholder="Latitude (e.g. 44.31)" [(ngModel)]="manualLat" name="manualLat" required />
       <input pInputText type="number" step="any" placeholder="Longitude (e.g. -68.21)" [(ngModel)]="manualLng" name="manualLng" required />
@@ -24,6 +27,13 @@
   }
 
   @if (!error()) {
+    <div class="location-controls">
+      <button pButton type="button" [text]="true" (click)="onToggleLocationForm()">
+        {{ showLocationForm() ? 'Cancel' : 'Change location' }}
+      </button>
+      <button pButton type="button" [text]="true" (click)="onRetryLocation()">Use my current location</button>
+    </div>
+
     <div class="agency-filter">
       <p-multiselect
         [options]="ALL_AGENCIES"
@@ -90,6 +100,7 @@
       <app-campground-map
         [campgrounds]="campgrounds()"
         [selectedId]="selected()?.id ?? null"
+        [searchLocation]="searchLocation()"
         (viewDetails)="onViewDetails($event)"
       />
       <app-campground-table

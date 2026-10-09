@@ -44,6 +44,8 @@ export class FinderComponent implements OnInit {
   // True only once the browser permission is known to be explicitly 'denied'
   // — that's the one state a "Try again" button can't do anything about.
   readonly locationBlocked = signal(false);
+  readonly searchLocation = signal<Coordinates | null>(null);
+  readonly showLocationForm = signal(false);
 
   readonly ALL_AGENCIES = ['NPS', 'USFS', 'BLM', 'USACE', 'FWS'];
   readonly RADIUS_OPTIONS = [25, 50, 100, 250];
@@ -69,8 +71,6 @@ export class FinderComponent implements OnInit {
 
   manualLat: number | null = null;
   manualLng: number | null = null;
-
-  private lastCoords: Coordinates | null = null;
 
   constructor(
     private readonly geolocation: GeolocationService,
@@ -99,7 +99,7 @@ export class FinderComponent implements OnInit {
     }
     try {
       const location = coords ?? (await this.geolocation.getCurrentPosition());
-      this.lastCoords = location;
+      this.searchLocation.set(location);
       const maxDistanceMeters = this.nearMeEnabled
         ? this.radiusMiles * METERS_PER_MILE
         : SHOW_ALL_RADIUS_M;
@@ -136,6 +136,7 @@ export class FinderComponent implements OnInit {
 
   onManualSubmit(): void {
     if (this.manualLat != null && this.manualLng != null) {
+      this.showLocationForm.set(false);
       this.loadNearest({ lat: this.manualLat, lng: this.manualLng });
     }
   }
@@ -144,8 +145,13 @@ export class FinderComponent implements OnInit {
     return this.loadNearest();
   }
 
+  onToggleLocationForm(): void {
+    this.showLocationForm.update((shown) => !shown);
+  }
+
   onFilterChange(): Promise<void> {
-    return this.lastCoords ? this.loadNearest(this.lastCoords) : Promise.resolve();
+    const location = this.searchLocation();
+    return location ? this.loadNearest(location) : Promise.resolve();
   }
 
   onRegionFilterChange(): Promise<void> {

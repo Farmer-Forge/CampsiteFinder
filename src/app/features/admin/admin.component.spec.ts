@@ -17,6 +17,9 @@ describe('AdminComponent', () => {
     const updateRoleSpy = vi.fn().mockResolvedValue(undefined);
     const setSuspendedSpy = vi.fn().mockResolvedValue(undefined);
     const deleteUserSpy = vi.fn().mockResolvedValue(undefined);
+    const inviteUserSpy = vi.fn().mockResolvedValue(undefined);
+    const updateDisplayNameSpy = vi.fn().mockResolvedValue(undefined);
+    const updateEmailSpy = vi.fn().mockResolvedValue(undefined);
     const usersSignal = signal<AdminUser[]>(overrides.users ?? []);
     const loadForCampgroundSpy = vi.fn().mockResolvedValue(undefined);
     const addAttributeSpy = vi.fn().mockResolvedValue(undefined);
@@ -37,6 +40,9 @@ describe('AdminComponent', () => {
             updateRole: updateRoleSpy,
             setSuspended: setSuspendedSpy,
             deleteUser: deleteUserSpy,
+            inviteUser: inviteUserSpy,
+            updateDisplayName: updateDisplayNameSpy,
+            updateEmail: updateEmailSpy,
           },
         },
         {
@@ -64,6 +70,9 @@ describe('AdminComponent', () => {
       updateRoleSpy,
       setSuspendedSpy,
       deleteUserSpy,
+      inviteUserSpy,
+      updateDisplayNameSpy,
+      updateEmailSpy,
       loadForCampgroundSpy,
       addAttributeSpy,
       updateAttributeSpy,
@@ -178,6 +187,124 @@ describe('AdminComponent', () => {
     component.onCancelDeleteUser();
 
     expect(component.confirmingDeleteUserId()).toBeNull();
+  });
+
+  it('invites a new user and clears the form', async () => {
+    const { component, inviteUserSpy } = setup();
+    component.newUserEmail = ' new@example.com ';
+    component.newUserDisplayName = ' New Person ';
+
+    await component.onInviteUser();
+
+    expect(inviteUserSpy).toHaveBeenCalledWith('new@example.com', 'New Person');
+    expect(component.newUserEmail).toBe('');
+    expect(component.newUserDisplayName).toBe('');
+    expect(component.usersError()).toBeNull();
+  });
+
+  it('invites a new user without a display name', async () => {
+    const { component, inviteUserSpy } = setup();
+    component.newUserEmail = 'new@example.com';
+
+    await component.onInviteUser();
+
+    expect(inviteUserSpy).toHaveBeenCalledWith('new@example.com', undefined);
+  });
+
+  it('does not invite a user with a blank email', async () => {
+    const { component, inviteUserSpy } = setup();
+    component.newUserEmail = '   ';
+
+    await component.onInviteUser();
+
+    expect(inviteUserSpy).not.toHaveBeenCalled();
+  });
+
+  it('shows an error if inviting a user fails', async () => {
+    const { component, inviteUserSpy } = setup();
+    inviteUserSpy.mockRejectedValue(new Error('Email already registered'));
+    component.newUserEmail = 'new@example.com';
+
+    await component.onInviteUser();
+
+    expect(component.usersError()).toBe('Email already registered');
+  });
+
+  it('starts a user edit seeded from the current row', () => {
+    const { component } = setup({ users: [user] });
+
+    component.onStartEditUser(user);
+
+    expect(component.editingUserId()).toBe('user-1');
+    expect(component.editDisplayName).toBe('Alex');
+    expect(component.editEmail).toBe('alex@example.com');
+  });
+
+  it('cancels a user edit', () => {
+    const { component } = setup({ users: [user] });
+    component.onStartEditUser(user);
+
+    component.onCancelEditUser();
+
+    expect(component.editingUserId()).toBeNull();
+  });
+
+  it('saves only the display name when only it changed', async () => {
+    const { component, updateDisplayNameSpy, updateEmailSpy } = setup({ users: [user] });
+    component.onStartEditUser(user);
+    component.editDisplayName = 'Alexandra';
+
+    await component.onSaveEditUser(user);
+
+    expect(updateDisplayNameSpy).toHaveBeenCalledWith('user-1', 'Alexandra');
+    expect(updateEmailSpy).not.toHaveBeenCalled();
+    expect(component.editingUserId()).toBeNull();
+  });
+
+  it('saves only the email when only it changed', async () => {
+    const { component, updateDisplayNameSpy, updateEmailSpy } = setup({ users: [user] });
+    component.onStartEditUser(user);
+    component.editEmail = 'alexandra@example.com';
+
+    await component.onSaveEditUser(user);
+
+    expect(updateEmailSpy).toHaveBeenCalledWith('user-1', 'alexandra@example.com');
+    expect(updateDisplayNameSpy).not.toHaveBeenCalled();
+  });
+
+  it('saves both fields when both changed', async () => {
+    const { component, updateDisplayNameSpy, updateEmailSpy } = setup({ users: [user] });
+    component.onStartEditUser(user);
+    component.editDisplayName = 'Alexandra';
+    component.editEmail = 'alexandra@example.com';
+
+    await component.onSaveEditUser(user);
+
+    expect(updateDisplayNameSpy).toHaveBeenCalledWith('user-1', 'Alexandra');
+    expect(updateEmailSpy).toHaveBeenCalledWith('user-1', 'alexandra@example.com');
+  });
+
+  it('saves neither field when nothing changed', async () => {
+    const { component, updateDisplayNameSpy, updateEmailSpy } = setup({ users: [user] });
+    component.onStartEditUser(user);
+
+    await component.onSaveEditUser(user);
+
+    expect(updateDisplayNameSpy).not.toHaveBeenCalled();
+    expect(updateEmailSpy).not.toHaveBeenCalled();
+    expect(component.editingUserId()).toBeNull();
+  });
+
+  it('shows an error and stays in edit mode when saving a user edit fails', async () => {
+    const { component, updateDisplayNameSpy } = setup({ users: [user] });
+    updateDisplayNameSpy.mockRejectedValue(new Error('boom'));
+    component.onStartEditUser(user);
+    component.editDisplayName = 'Alexandra';
+
+    await component.onSaveEditUser(user);
+
+    expect(component.usersError()).toBe('boom');
+    expect(component.editingUserId()).toBe('user-1');
   });
 
   const attribute: CampgroundAttribute = {

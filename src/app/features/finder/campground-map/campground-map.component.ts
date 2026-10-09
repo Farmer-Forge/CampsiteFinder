@@ -4,8 +4,13 @@ import { LeafletMarkerClusterModule } from '@bluehalo/ngx-leaflet-markercluster'
 import * as L from 'leaflet';
 import 'leaflet.markercluster';
 import { Campground } from '../../../core/models/campground.model';
+import { Coordinates } from '../../../core/services/geolocation.service';
 import { TripsService } from '../../../core/services/trips.service';
 import { SupabaseService } from '../../../core/services/supabase.service';
+
+// Roughly a 100-mile view at mid-latitudes — a "here's the region" zoom
+// level, not a street-level one.
+const SEARCH_LOCATION_ZOOM = 9;
 
 // Leaflet's Icon.Default always prepends an auto-detected `imagePath`
 // directory to its icon filenames — it reads the computed background-image
@@ -32,7 +37,9 @@ L.Icon.Default.mergeOptions({
       class="campground-map"
       leaflet
       [leafletOptions]="mapOptions"
-      [leafletLayers]="routeLayers"
+      [leafletLayers]="overlayLayers"
+      [leafletCenter]="mapCenter"
+      [leafletZoom]="mapZoom"
       [leafletMarkerCluster]="markerLayers"
       [leafletMarkerClusterOptions]="markerClusterOptions"
       (leafletMapReady)="onMapReady($event)"
@@ -44,6 +51,7 @@ export class CampgroundMapComponent implements OnChanges {
   @Input({ required: true }) campgrounds: Campground[] = [];
   @Input() selectedId: string | null = null;
   @Input() ordered = false;
+  @Input() searchLocation: Coordinates | null = null;
   @Output() viewDetails = new EventEmitter<string>();
 
   private readonly tripsService = inject(TripsService);
@@ -62,12 +70,18 @@ export class CampgroundMapComponent implements OnChanges {
   };
 
   markerLayers: L.Layer[] = [];
-  routeLayers: L.Layer[] = [];
   // MarkerClusterGroup.addLayers (which the leafletMarkerCluster directive
   // uses) expects only markers — a polyline has no getLatLng() and isn't a
-  // marker to cluster, so the trip-route line goes through plain
-  // leafletLayers instead, in the separate routeLayers array above.
+  // marker to cluster, so non-campground content (the trip-route line, the
+  // "you are here" pin) goes through plain leafletLayers instead, in the
+  // separate overlayLayers array above, composed from the two pieces below.
+  overlayLayers: L.Layer[] = [];
+  private routePolyline: L.Polyline | null = null;
+  private locationMarker: L.Marker | null = null;
   readonly markerClusterOptions: L.MarkerClusterGroupOptions = {};
+
+  mapCenter: L.LatLng = this.mapOptions.center as L.LatLng;
+  mapZoom: number = this.mapOptions.zoom as number;
 
   onMapReady(map: L.Map): void {
     this.map = map;
@@ -81,12 +95,11 @@ export class CampgroundMapComponent implements OnChanges {
           .on('click', () => this.map?.setView([c.lat, c.lng], 12)),
       );
       this.markerLayers = markers;
-      if (this.ordered && this.campgrounds.length > 1) {
-        const route = L.polyline(this.campgrounds.map((c) => [c.lat, c.lng] as L.LatLngTuple));
-        this.routeLayers = [route];
-      } else {
-        this.routeLayers = [];
-      }
+      this.routePolyline =
+        this.ordered && this.campgrounds.length > 1
+          ? L.polyline(this.campgrounds.map((c) => [c.lat, c.lng] as L.LatLngTuple))
+          : null;
+      this.rebuildOverlayLayers();
       // In ordered (trip route) mode nothing else ever moves the viewport —
       // `selectedId` is always null there — so without this the map sits on
       // its constructional default (the middle of the continental US) while
@@ -107,6 +120,24 @@ export class CampgroundMapComponent implements OnChanges {
         this.map.setView([selected.lat, selected.lng], 12);
       }
     }
+    if (changes['searchLocation']) {
+      if (this.searchLocation) {
+        this.mapCenter = L.latLng(this.searchLocation.lat, this.searchLocation.lng);
+        this.mapZoom = SEARCH_LOCATION_ZOOM;
+        this.locationMarker = L.marker([this.searchLocation.lat, this.searchLocation.lng], {
+          icon: this.currentLocationIcon(),
+          zIndexOffset: -1000,
+        }).bindTooltip('Your search location');
+      } else {
+        this.locationMarker = null;
+      }
+      this.rebuildOverlayLayers();
+    }
+  }
+
+  private rebuildOverlayLayers(): void {
+    const layers: (L.Layer | null)[] = [this.routePolyline, this.locationMarker];
+    this.overlayLayers = layers.filter((layer): layer is L.Layer => layer !== null);
   }
 
   // A plain DOM popup, not the AddToTripComponent used elsewhere — Leaflet
@@ -155,6 +186,14 @@ export class CampgroundMapComponent implements OnChanges {
       className: 'trip-stop-marker',
       html: `<span>${n}</span>`,
       iconSize: [28, 28],
+    });
+  }
+
+  private currentLocationIcon(): L.DivIcon {
+    return L.divIcon({
+      className: 'current-location-marker',
+      iconSize: [16, 16],
+      iconAnchor: [8, 8],
     });
   }
 }
