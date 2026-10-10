@@ -1,9 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-import { MessageModule } from 'primeng/message';
 import { CampgroundMapComponent } from '../finder/campground-map/campground-map.component';
 import { CampgroundTableComponent } from '../finder/campground-table/campground-table.component';
 import { FavoritesService } from '../../core/services/favorites.service';
@@ -14,8 +11,44 @@ import { Campground } from '../../core/models/campground.model';
 @Component({
   selector: 'app-favorites',
   standalone: true,
-  imports: [CampgroundMapComponent, CampgroundTableComponent, FormsModule, ButtonModule, InputTextModule, MessageModule],
+  imports: [CampgroundMapComponent, CampgroundTableComponent, FormsModule],
   templateUrl: './favorites.component.html',
+  styles: `
+    :host {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .favorites-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .plan-button {
+      margin-left: auto;
+    }
+    .planner-hint {
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .planner-row {
+      display: flex;
+      gap: 8px;
+    }
+    .planner-row .rt-input {
+      flex: 1;
+      background: var(--rt-card);
+    }
+    .empty {
+      margin: 0;
+    }
+    @media (max-width: 900px) {
+      :host {
+        flex: none;
+      }
+    }
+  `,
 })
 export class FavoritesComponent implements OnInit {
   readonly favorites = inject(FavoritesService);

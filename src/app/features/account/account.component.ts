@@ -1,17 +1,84 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-import { MessageModule } from 'primeng/message';
-import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { UserService } from '../../core/services/user.service';
 
 @Component({
   selector: 'app-account',
   standalone: true,
-  imports: [FormsModule, ButtonModule, InputTextModule, MessageModule, ToggleSwitchModule],
+  imports: [FormsModule],
   templateUrl: './account.component.html',
+  styles: `
+    .rt-content {
+      max-width: 720px;
+      gap: 20px;
+    }
+    .card-action {
+      align-self: flex-start;
+    }
+    .password-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+    }
+    .theme-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .theme-toggle {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font: inherit;
+      font-weight: 600;
+      font-size: 15px;
+      border: none;
+      background: none;
+      padding: 0;
+      cursor: pointer;
+      color: var(--rt-ink);
+    }
+    .track {
+      width: 48px;
+      height: 26px;
+      box-sizing: border-box;
+      padding: 2px;
+      border-radius: 999px;
+      border: 2px solid var(--rt-ink);
+      background: var(--rt-sand);
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+    }
+    .track.is-on {
+      background: var(--rt-teal);
+      justify-content: flex-end;
+    }
+    .knob {
+      width: 18px;
+      height: 18px;
+      box-sizing: border-box;
+      border-radius: 50%;
+      background: var(--rt-cream);
+      border: 2px solid var(--rt-ink);
+    }
+    .danger-zone {
+      border-color: var(--rt-cherry);
+      box-shadow: none;
+    }
+    .danger-zone .rt-heading {
+      color: var(--rt-cherry);
+    }
+    .confirm-text {
+      margin: 0;
+    }
+    .confirm-actions {
+      display: flex;
+      gap: 8px;
+    }
+  `,
 })
 export class AccountComponent implements OnInit {
   private readonly userService = inject(UserService);

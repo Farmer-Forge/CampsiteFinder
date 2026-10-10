@@ -1,49 +1,54 @@
-@if (noteError()) {
-  <p-message severity="warn">{{ noteError() }}</p-message>
-}
-
-<div class="finder-layout">
-  <app-campground-map [campgrounds]="campgrounds()" [selectedId]="selected()?.id ?? null" />
-  <app-campground-table
-    [campgrounds]="campgrounds()"
-    [selected]="selected()"
-    [showDistance]="false"
-    [showNotes]="true"
-    [notes]="favorites.favoriteNotes()"
-    (selectedChange)="onSelectionChange($event)"
-    (noteChange)="onNoteChange($event)"
-  />
-</div>
-@if (campgrounds().length === 0) {
-  <p>No favorites yet. Star a campground from the Finder to save it here.</p>
-}
-
-@if (campgrounds().length > 0) {
-  <button pButton [text]="true" (click)="togglePlanning()">
-    {{ planningTrip() ? 'Cancel' : 'Plan a trip' }}
-  </button>
-}
-
-@if (planningTrip()) {
-  <div class="trip-planner">
-    <input pInputText type="text" placeholder="Trip name" [(ngModel)]="tripName" name="tripName" />
-    <ul>
-      @for (campground of campgrounds(); track campground.id) {
-        <li>
-          <label>
-            <input
-              type="checkbox"
-              [checked]="selectedForTrip().has(campground.id)"
-              (change)="toggleSelectedForTrip(campground.id)"
-            />
-            {{ campground.name }}
-          </label>
-        </li>
-      }
-    </ul>
-    <button pButton [disabled]="!canSaveTrip" (click)="saveTrip()">Save Trip</button>
-    @if (tripError()) {
-      <p-message severity="warn">{{ tripError() }}</p-message>
-    }
+<div class="rt-map-layout">
+  <div class="rt-map-frame">
+    <app-campground-map [campgrounds]="campgrounds()" [selectedId]="selected()?.id ?? null" />
   </div>
-}
+  <div class="rt-side">
+    <div class="favorites-header">
+      <h1 class="rt-list-title">Favorites</h1>
+      @if (campgrounds().length > 0) {
+        <button
+          type="button"
+          class="rt-btn rt-btn--shadow plan-button"
+          [class.rt-btn--mustard]="!planningTrip()"
+          (click)="togglePlanning()"
+        >
+          {{ planningTrip() ? 'Cancel' : 'Plan a trip' }}
+        </button>
+      }
+    </div>
+
+    @if (planningTrip()) {
+      <div class="rt-dashed-panel trip-planner">
+        <div class="planner-hint">Tick the stops below, name the trip, and save.</div>
+        <div class="planner-row">
+          <input class="rt-input" type="text" placeholder="Trip name" [(ngModel)]="tripName" name="tripName" />
+          <button type="button" class="rt-btn rt-btn--cherry" [disabled]="!canSaveTrip" (click)="saveTrip()">Save Trip</button>
+        </div>
+        @if (tripError()) {
+          <p class="rt-error">{{ tripError() }}</p>
+        }
+      </div>
+    }
+
+    @if (noteError()) {
+      <p class="rt-error">{{ noteError() }}</p>
+    }
+
+    @if (campgrounds().length === 0) {
+      <p class="empty">No favorites yet. Star a campground from the Finder to save it here.</p>
+    }
+
+    <app-campground-table
+      [campgrounds]="campgrounds()"
+      [selected]="selected()"
+      [showDistance]="false"
+      [showNotes]="true"
+      [notes]="favorites.favoriteNotes()"
+      [planMode]="planningTrip()"
+      [planSelected]="selectedForTrip()"
+      (selectedChange)="onSelectionChange($event)"
+      (noteChange)="onNoteChange($event)"
+      (planToggle)="toggleSelectedForTrip($event)"
+    />
+  </div>
+</div>

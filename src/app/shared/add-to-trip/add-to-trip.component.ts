@@ -1,57 +1,96 @@
-import { Component, Input, inject, signal } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-import { MessageModule } from 'primeng/message';
-import { Popover, PopoverModule } from 'primeng/popover';
 import { TripsService } from '../../core/services/trips.service';
-import { SupabaseService } from '../../core/services/supabase.service';
 
+// Inline "Add to trip" panel shown under a campground card. The card owns
+// the open/closed state (one panel open at a time); this panel loads on
+// creation and emits `done` once the campground has been added somewhere.
 @Component({
   selector: 'app-add-to-trip',
   standalone: true,
-  imports: [ButtonModule, InputTextModule, MessageModule, PopoverModule, FormsModule],
+  imports: [FormsModule],
   template: `
-    @if (supabase.isAuthenticated) {
-      <button pButton [text]="true" (click)="op.toggle($event)">Add to Trip</button>
-      <p-popover #op (onShow)="onShow()">
-        <ng-template #content>
-          <div class="add-to-trip-panel">
-            @for (trip of trips.trips(); track trip.id) {
-              <button
-                pButton
-                [text]="true"
-                [disabled]="tripsContaining().has(trip.id)"
-                (click)="onAdd(trip.id, op)"
-              >
-                {{ trip.name }}{{ tripsContaining().has(trip.id) ? ' (added)' : '' }}
-              </button>
-            }
-            <div class="add-to-trip-new">
-              <input pInputText type="text" placeholder="New trip name" [(ngModel)]="newTripName" />
-              <button pButton (click)="onCreateAndAdd(op)">Create &amp; Add</button>
-            </div>
-            @if (error()) {
-              <p-message severity="warn">{{ error() }}</p-message>
-            }
-          </div>
-        </ng-template>
-      </p-popover>
+    <div class="add-to-trip-panel">
+      <div class="rt-label">ADD TO TRIP</div>
+      @if (trips.trips().length > 0) {
+        <div class="trip-options">
+          @for (trip of trips.trips(); track trip.id) {
+            <button
+              type="button"
+              class="rt-btn rt-btn--sm trip-option"
+              [disabled]="tripsContaining().has(trip.id)"
+              (click)="onAdd(trip.id)"
+            >
+              {{ trip.name }}{{ tripsContaining().has(trip.id) ? ' (added)' : '' }}
+            </button>
+          }
+        </div>
+      }
+      <div class="add-to-trip-new">
+        <input
+          class="rt-input rt-input--sm"
+          type="text"
+          placeholder="New trip name"
+          [(ngModel)]="newTripName"
+          (keydown.enter)="onCreateAndAdd()"
+        />
+        <button type="button" class="rt-btn rt-btn--sm rt-btn--cherry" (click)="onCreateAndAdd()">Create &amp; Add</button>
+      </div>
+      @if (error()) {
+        <p class="rt-error">{{ error() }}</p>
+      }
+    </div>
+  `,
+  styles: `
+    .add-to-trip-panel {
+      margin: 0 14px 14px;
+      padding: 12px;
+      border: 2px dashed var(--rt-ink);
+      border-radius: 12px;
+      background: var(--rt-cream);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      cursor: default;
+    }
+    .rt-label {
+      font-size: 13px;
+    }
+    .trip-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .trip-option:disabled {
+      background: var(--rt-sand);
+      opacity: 1;
+    }
+    .add-to-trip-new {
+      display: flex;
+      gap: 8px;
+    }
+    .add-to-trip-new .rt-input {
+      flex: 1;
+      background: var(--rt-card);
     }
   `,
 })
-export class AddToTripComponent {
+export class AddToTripComponent implements OnInit {
   @Input({ required: true }) campgroundId!: string;
+  @Output() done = new EventEmitter<void>();
 
   readonly trips = inject(TripsService);
-  readonly supabase = inject(SupabaseService);
 
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
   readonly tripsContaining = signal<Set<string>>(new Set());
   newTripName = '';
 
-  async onShow(): Promise<void> {
+  ngOnInit(): Promise<void> {
+    return this.load();
+  }
+
+  async load(): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
     try {
@@ -67,25 +106,25 @@ export class AddToTripComponent {
     }
   }
 
-  async onAdd(tripId: string, popover: Popover): Promise<void> {
+  async onAdd(tripId: string): Promise<void> {
     this.error.set(null);
     try {
       await this.trips.addStop(tripId, this.campgroundId);
       this.tripsContaining.update((ids) => new Set(ids).add(tripId));
-      popover.hide();
+      this.done.emit();
     } catch {
       this.error.set("Couldn't add to that trip — try again.");
     }
   }
 
-  async onCreateAndAdd(popover: Popover): Promise<void> {
+  async onCreateAndAdd(): Promise<void> {
     const name = this.newTripName.trim();
     if (!name) return;
     this.error.set(null);
     try {
       await this.trips.createTrip(name, [this.campgroundId]);
       this.newTripName = '';
-      popover.hide();
+      this.done.emit();
     } catch {
       this.error.set("Couldn't create that trip — try again.");
     }

@@ -1,16 +1,23 @@
 <nav class="app-nav">
-  <a pButton [outlined]="true" severity="secondary" routerLink="/">Finder</a>
-  <a pButton [outlined]="true" severity="secondary" routerLink="/favorites">Favorites</a>
-  <a pButton [outlined]="true" severity="secondary" routerLink="/trips">Trips</a>
-  <a pButton [outlined]="true" severity="secondary" routerLink="/about">About Us</a>
-  @if (supabase.isAuthenticated) {
-    <a pButton [outlined]="true" severity="secondary" routerLink="/account">Account</a>
-    @if (userService.profile()?.role === 'admin') {
-      <a pButton [outlined]="true" severity="secondary" routerLink="/admin">Admin</a>
+  <a class="wordmark" routerLink="/">Campsite Finder</a>
+  <div class="nav-main">
+    <a class="nav-link" routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Finder</a>
+    <a class="nav-link" routerLink="/favorites" routerLinkActive="active">Favorites</a>
+    <a class="nav-link" routerLink="/trips" routerLinkActive="active">Trips</a>
+    <a class="nav-link" routerLink="/about" routerLinkActive="active">About Us</a>
+  </div>
+  <div class="nav-user">
+    @if (supabase.isAuthenticated) {
+      <a class="nav-pill" routerLink="/account" routerLinkActive="active">Account</a>
+      @if (userService.profile()?.role === 'admin') {
+        <a class="nav-pill" routerLink="/admin" routerLinkActive="active">Admin</a>
+      }
+      <button type="button" class="rt-btn rt-btn--mustard rt-btn--shadow sign-out-button" (click)="onSignOut()">Sign out</button>
+    } @else {
+      <a class="nav-pill" routerLink="/login" routerLinkActive="active">Sign in</a>
     }
-    <button pButton severity="secondary" class="sign-out-button" (click)="onSignOut()">Sign out</button>
-  } @else {
-    <a pButton [outlined]="true" severity="secondary" routerLink="/login">Sign in</a>
-  }
+  </div>
 </nav>
-<router-outlet />
+<main class="app-main">
+  <router-outlet />
+</main>

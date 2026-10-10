@@ -41,57 +41,82 @@ describe('CampgroundTableComponent', () => {
     component = fixture.componentInstance;
   });
 
-  it('renders an Add to Trip control for each row', () => {
-    component.campgrounds = [{ id: '1', name: 'A' } as any];
+  const cg = (id: string, extra: Record<string, unknown> = {}) =>
+    ({ id, name: `Camp ${id}`, agency: 'NPS', parkCode: null, distanceMeters: 0, ...extra }) as any;
+
+  function clickCard(index: number): void {
+    fixture.debugElement.queryAll(By.css('.card-main'))[index].triggerEventHandler('click', null);
+    fixture.detectChanges();
+  }
+
+  it('opens an inline Add to Trip panel when the + button is clicked', () => {
+    component.campgrounds = [cg('1')];
+    fixture.detectChanges();
+    expect(fixture.debugElement.query(By.directive(AddToTripComponent))).toBeFalsy();
+
+    fixture.debugElement.query(By.css('.add-to-trip-toggle')).nativeElement.click();
     fixture.detectChanges();
 
     const addToTrip = fixture.debugElement.query(By.directive(AddToTripComponent));
-    expect(addToTrip).toBeTruthy();
     expect(addToTrip.componentInstance.campgroundId).toBe('1');
   });
 
-  it('emits selectedChange when a row is selected', () => {
-    const campground = { id: '1', name: 'A' } as any;
-    let emitted: any;
-    component.selectedChange.subscribe((c) => (emitted = c));
+  it('keeps only one Add to Trip panel open at a time', () => {
+    component.campgrounds = [cg('1'), cg('2')];
+    fixture.detectChanges();
+    const toggles = fixture.debugElement.queryAll(By.css('.add-to-trip-toggle'));
 
-    component.onSelectionChange(campground);
-
-    expect(emitted).toBe(campground);
-  });
-
-  it('shows the Distance column by default', () => {
-    component.campgrounds = [];
+    toggles[0].nativeElement.click();
+    fixture.detectChanges();
+    toggles[1].nativeElement.click();
     fixture.detectChanges();
 
-    const header = fixture.nativeElement.textContent;
-    expect(header).toContain('Distance');
+    const panels = fixture.debugElement.queryAll(By.directive(AddToTripComponent));
+    expect(panels.length).toBe(1);
+    expect(panels[0].componentInstance.campgroundId).toBe('2');
   });
 
-  it('hides the Distance column when showDistance is false', () => {
-    component.campgrounds = [];
+  it('emits selectedChange when a card is expanded, and null when collapsed', () => {
+    component.campgrounds = [cg('1')];
+    fixture.detectChanges();
+    const emitted: unknown[] = [];
+    component.selectedChange.subscribe((c) => emitted.push(c));
+
+    clickCard(0);
+    clickCard(0);
+
+    expect(emitted).toEqual([component.campgrounds[0], null]);
+  });
+
+  it('shows a distance badge in miles by default', () => {
+    component.campgrounds = [cg('1', { distanceMeters: 1609.34 * 12.34 }), cg('2', { distanceMeters: 1609.34 * 150.6 })];
+    fixture.detectChanges();
+
+    const badges = fixture.debugElement.queryAll(By.css('.badge-top')).map((b) => b.nativeElement.textContent.trim());
+    expect(badges).toEqual(['12.3', '151']);
+  });
+
+  it('hides the distance badge when showDistance is false', () => {
+    component.campgrounds = [cg('1')];
     component.showDistance = false;
     fixture.detectChanges();
 
-    const header = fixture.nativeElement.textContent;
-    expect(header).not.toContain('Distance');
+    expect(fixture.debugElement.query(By.css('.distance-badge'))).toBeFalsy();
   });
 
-  it('hides the Note column by default', () => {
-    component.campgrounds = [];
+  it('hides note inputs by default', () => {
+    component.campgrounds = [cg('1')];
     fixture.detectChanges();
 
-    const header = fixture.nativeElement.textContent;
-    expect(header).not.toContain('Note');
+    expect(fixture.debugElement.query(By.css('.note-input'))).toBeFalsy();
   });
 
-  it('shows a Note column when showNotes is true', () => {
-    component.campgrounds = [];
+  it('shows a note input per card when showNotes is true', () => {
+    component.campgrounds = [cg('1')];
     component.showNotes = true;
     fixture.detectChanges();
 
-    const header = fixture.nativeElement.textContent;
-    expect(header).toContain('Note');
+    expect(fixture.debugElement.query(By.css('.note-input'))).toBeTruthy();
   });
 
   it('seeds noteDrafts from the notes input on change', () => {
@@ -139,62 +164,36 @@ describe('CampgroundTableComponent', () => {
     expect(emitted).toEqual({ campgroundId: 'cg-1', note: 'updated note' });
   });
 
-  it('shows the Agency column with each campground\'s agency', () => {
-    component.campgrounds = [{ id: '1', name: 'A', parkCode: null, agency: 'USFS' } as any];
+  it('shows each campground\'s agency and park code as tags', () => {
+    component.campgrounds = [cg('1', { agency: 'USFS', parkCode: 'acad' })];
     fixture.detectChanges();
 
-    const text = fixture.nativeElement.textContent;
-    expect(text).toContain('Agency');
-    expect(text).toContain('USFS');
+    const tags = fixture.debugElement.queryAll(By.css('.rt-tag')).map((t) => t.nativeElement.textContent.trim());
+    expect(tags).toEqual(['USFS', 'acad']);
   });
 
-  it('expands a row to show its details when the name is clicked', () => {
-    component.campgrounds = [{ id: '1', name: 'A' } as any];
+  it('expands a card to show its details when clicked', () => {
+    component.campgrounds = [cg('1')];
     fixture.detectChanges();
 
-    fixture.debugElement.query(By.css('.campground-name-link')).triggerEventHandler('click', null);
-    fixture.detectChanges();
+    clickCard(0);
 
     const panel = fixture.debugElement.query(By.directive(CampgroundDetailPanelComponent));
-    expect(panel).toBeTruthy();
     expect(panel.componentInstance.campground.id).toBe('1');
   });
 
-  it('collapses an expanded row when its name is clicked again', () => {
-    component.campgrounds = [{ id: '1', name: 'A' } as any];
-    fixture.detectChanges();
-    const nameLink = fixture.debugElement.query(By.css('.campground-name-link'));
-
-    nameLink.triggerEventHandler('click', null);
-    fixture.detectChanges();
-    nameLink.triggerEventHandler('click', null);
+  it('collapses an expanded card when clicked again', () => {
+    component.campgrounds = [cg('1')];
     fixture.detectChanges();
 
-    const panel = fixture.debugElement.query(By.directive(CampgroundDetailPanelComponent));
-    expect(panel).toBeFalsy();
+    clickCard(0);
+    clickCard(0);
+
+    expect(fixture.debugElement.query(By.directive(CampgroundDetailPanelComponent))).toBeFalsy();
   });
 
-  it('shows a collapsed chevron next to a row\'s name by default', () => {
-    component.campgrounds = [{ id: '1', name: 'A' } as any];
-    fixture.detectChanges();
-
-    const icon = fixture.debugElement.query(By.css('.campground-name-link .pi'));
-    expect(icon.nativeElement.classList).toContain('pi-chevron-right');
-  });
-
-  it('flips the chevron once the row is expanded', () => {
-    component.campgrounds = [{ id: '1', name: 'A' } as any];
-    fixture.detectChanges();
-
-    fixture.debugElement.query(By.css('.campground-name-link')).triggerEventHandler('click', null);
-    fixture.detectChanges();
-
-    const icon = fixture.debugElement.query(By.css('.campground-name-link .pi'));
-    expect(icon.nativeElement.classList).toContain('pi-chevron-down');
-  });
-
-  it('expands the row matching the selected input', () => {
-    const campgrounds = [{ id: '1', name: 'A' } as any, { id: '2', name: 'B' } as any];
+  it('expands the card matching the selected input', () => {
+    const campgrounds = [cg('1'), cg('2')];
     component.campgrounds = campgrounds;
     fixture.detectChanges();
 
@@ -206,32 +205,32 @@ describe('CampgroundTableComponent', () => {
     expect(panel.componentInstance.campground.id).toBe('2');
   });
 
-  it('jumps the table to the page containing a newly selected row', () => {
-    component.campgrounds = Array.from(
-      { length: 25 },
-      (_, i) => ({ id: `${i}`, name: `Row ${i}` }) as any,
-    );
+  it('only expands one card at a time', () => {
+    component.campgrounds = [cg('1'), cg('2')];
     fixture.detectChanges();
 
-    component.selected = { id: '21', name: 'Row 21' } as any;
-    component.ngOnChanges({ selected: {} as any });
-    fixture.detectChanges();
-
-    expect((component as any).table?.first()).toBe(20);
-  });
-
-  it('only expands one row at a time', () => {
-    component.campgrounds = [{ id: '1', name: 'A' } as any, { id: '2', name: 'B' } as any];
-    fixture.detectChanges();
-    const nameLinks = fixture.debugElement.queryAll(By.css('.campground-name-link'));
-
-    nameLinks[0].triggerEventHandler('click', null);
-    fixture.detectChanges();
-    nameLinks[1].triggerEventHandler('click', null);
-    fixture.detectChanges();
+    clickCard(0);
+    clickCard(1);
 
     const panels = fixture.debugElement.queryAll(By.directive(CampgroundDetailPanelComponent));
     expect(panels.length).toBe(1);
     expect(panels[0].componentInstance.campground.id).toBe('2');
+  });
+
+  it('shows plan checkboxes in plan mode and emits planToggle without expanding the card', () => {
+    component.campgrounds = [cg('1')];
+    component.planMode = true;
+    component.planSelected = new Set(['1']);
+    fixture.detectChanges();
+    let toggled: string | undefined;
+    component.planToggle.subscribe((id) => (toggled = id));
+
+    const check = fixture.debugElement.query(By.css('.plan-check'));
+    expect(check.nativeElement.classList).toContain('is-checked');
+    check.nativeElement.click();
+    fixture.detectChanges();
+
+    expect(toggled).toBe('1');
+    expect(fixture.debugElement.query(By.directive(CampgroundDetailPanelComponent))).toBeFalsy();
   });
 });

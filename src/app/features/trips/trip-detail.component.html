@@ -1,56 +1,82 @@
 @if (notFound()) {
-  <p>Trip not found.</p>
+  <div class="rt-content">
+    <a class="back-link" routerLink="/trips">‹ All trips</a>
+    <p>Trip not found.</p>
+  </div>
 } @else if (trip(); as t) {
-  <div class="trip-detail">
-    @if (editingName()) {
-      <input pInputText type="text" [(ngModel)]="nameDraft" name="nameDraft" />
-      <button pButton [text]="true" (click)="saveRename()">Save</button>
-    } @else {
-      <h1>{{ t.name }}</h1>
-      <button pButton [text]="true" (click)="startRename()">Rename</button>
-    }
-    <button pButton [text]="true" (click)="onDeleteTrip()">Delete trip</button>
-
-    @if (error()) {
-      <p-message severity="warn">{{ error() }}</p-message>
-    }
-
-    <app-campground-map [campgrounds]="stopCampgrounds()" [ordered]="true" [selectedId]="null" />
-
-    <p-table [value]="stops()" (onRowReorder)="onRowReorder($event)">
-      <ng-template #header>
-        <tr>
-          <th style="width: 3rem"></th>
-          <th>Name</th>
-          <th>Park</th>
-          <th></th>
-        </tr>
-      </ng-template>
-      <ng-template #body let-stop let-i="rowIndex">
-        <tr [pReorderableRow]="i">
-          <td><span class="pi pi-bars" pReorderableRowHandle></span></td>
-          <td><a class="campground-name-link" (click)="toggleExpanded(stop.stopId)">{{ stop.campground.name }}</a></td>
-          <td>{{ stop.campground.parkCode }}</td>
-          <td><button pButton [text]="true" (click)="onRemoveStop(stop.stopId)">Remove</button></td>
-        </tr>
-        @if (expandedStopId === stop.stopId) {
-          <tr class="campground-detail-row">
-            <td colspan="4">
-              <app-campground-detail-panel [campground]="stop.campground" />
-            </td>
-          </tr>
+  <div class="rt-map-layout">
+    <div class="rt-map-frame">
+      <app-campground-map [campgrounds]="stopCampgrounds()" [ordered]="true" [selectedId]="null" />
+    </div>
+    <div class="rt-side">
+      <div class="trip-header">
+        <a class="back-link" routerLink="/trips">‹ All trips</a>
+        @if (editingName()) {
+          <div class="rename-row">
+            <input class="rt-input" type="text" [(ngModel)]="nameDraft" name="nameDraft" aria-label="Trip name" (keydown.enter)="saveRename()" />
+            <button type="button" class="rt-btn rt-btn--cherry" (click)="saveRename()">Save</button>
+          </div>
+        } @else {
+          <h1 class="rt-list-title">{{ t.name }}</h1>
         }
-      </ng-template>
-    </p-table>
+        <div class="meta-row">
+          <span class="meta">{{ stops().length }} stop{{ stops().length === 1 ? '' : 's' }} · created {{ t.createdAt | date }}</span>
+          @if (!editingName()) {
+            <button type="button" class="rt-btn rt-btn--sm rename" (click)="startRename()">Rename</button>
+          }
+          <button type="button" class="rt-btn rt-btn--sm rt-btn--danger-outline" (click)="onDeleteTrip()">Delete trip</button>
+        </div>
+      </div>
 
-    <div class="add-stop">
-      <select [(ngModel)]="addStopCampgroundId" name="addStopCampgroundId">
-        <option value="">Choose a favorite to add...</option>
-        @for (option of availableToAdd(); track option.id) {
-          <option [value]="option.id">{{ option.name }}</option>
+      @if (error()) {
+        <p class="rt-error">{{ error() }}</p>
+      }
+
+      <div class="rt-scroll-list">
+        @for (stop of stops(); track stop.stopId; let i = $index, first = $first, last = $last) {
+          <div class="stop-card" [class.is-open]="expandedStopId === stop.stopId">
+            <div class="card-main" (click)="toggleExpanded(stop.stopId)">
+              <div class="stop-badge">
+                <span class="badge-top">{{ i + 1 }}</span>
+                <span class="badge-sub">STOP</span>
+              </div>
+              <div class="card-text">
+                <div class="campground-name-link">{{ stop.campground.name }}</div>
+                <div class="tags">
+                  <span class="rt-tag rt-tag--teal">{{ stop.campground.agency }}</span>
+                  @if (stop.campground.parkCode) {
+                    <span class="rt-tag rt-tag--outline">{{ stop.campground.parkCode }}</span>
+                  }
+                </div>
+              </div>
+              <div class="reorder">
+                <button type="button" title="Move up" [disabled]="first" (click)="moveStop(i, -1); $event.stopPropagation()">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="m18 15-6-6-6 6" /></svg>
+                </button>
+                <button type="button" title="Move down" [disabled]="last" (click)="moveStop(i, 1); $event.stopPropagation()">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+                </button>
+              </div>
+              <button type="button" class="rt-btn rt-btn--sm rt-btn--danger-outline" (click)="onRemoveStop(stop.stopId); $event.stopPropagation()">Remove</button>
+            </div>
+            @if (expandedStopId === stop.stopId) {
+              <div class="detail">
+                <app-campground-detail-panel [campground]="stop.campground" />
+              </div>
+            }
+          </div>
         }
-      </select>
-      <button pButton [text]="true" [disabled]="!addStopCampgroundId" (click)="onAddStop()">Add</button>
+      </div>
+
+      <div class="add-stop">
+        <select class="rt-input" [(ngModel)]="addStopCampgroundId" name="addStopCampgroundId" aria-label="Favorite to add">
+          <option value="">Choose a favorite to add...</option>
+          @for (option of availableToAdd(); track option.id) {
+            <option [value]="option.id">{{ option.name }}</option>
+          }
+        </select>
+        <button type="button" class="rt-btn rt-btn--mustard" [disabled]="!addStopCampgroundId" (click)="onAddStop()">Add</button>
+      </div>
     </div>
   </div>
 }

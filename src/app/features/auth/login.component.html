@@ -1,10 +1,14 @@
-<form class="auth-form" (ngSubmit)="onSubmit()">
-  <h1>Sign In</h1>
-  @if (error()) {
-    <p-message severity="error">{{ error() }}</p-message>
-  }
-  <input pInputText type="email" placeholder="Email" [(ngModel)]="email" name="email" required />
-  <input pInputText type="password" placeholder="Password" [(ngModel)]="password" name="password" required />
-  <button pButton type="submit" [disabled]="submitting()">Sign In</button>
-  <a routerLink="/signup">Need an account? Sign up</a>
-</form>
+<div class="auth-page">
+  <form class="auth-card" (ngSubmit)="onSubmit()">
+    <div class="auth-header"><h1>Sign In</h1></div>
+    <div class="auth-body">
+      @if (error()) {
+        <p class="rt-error">{{ error() }}</p>
+      }
+      <input class="rt-input" type="email" placeholder="Email" [(ngModel)]="email" name="email" required />
+      <input class="rt-input" type="password" placeholder="Password" [(ngModel)]="password" name="password" required />
+      <button type="submit" class="rt-btn rt-btn--cherry auth-submit" [disabled]="submitting()">Sign In</button>
+      <a class="auth-switch" routerLink="/signup">Need an account? Sign up</a>
+    </div>
+  </form>
+</div>

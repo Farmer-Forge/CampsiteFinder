@@ -104,13 +104,7 @@ describe('TripDetailComponent', () => {
     });
     await component.ngOnInit();
 
-    // Simulate PrimeNG's Table.onRowDrop, which mutates the bound array
-    // in place (via its own reorderArray splice) before emitting onRowReorder.
-    const stopsArray = component.stops();
-    const [moved] = stopsArray.splice(0, 1);
-    stopsArray.splice(1, 0, moved);
-
-    await component.onRowReorder({ dragIndex: 0, dropIndex: 1 });
+    await component.moveStop(0, 1);
 
     expect(component.stops().map((s: any) => s.stopId)).toEqual(['stop-b', 'stop-a']);
     expect(reorderStops).toHaveBeenCalledWith('trip-1', ['stop-b', 'stop-a']);
@@ -254,8 +248,8 @@ describe('TripDetailComponent', () => {
       { stopId: 'stop-a', campground: { id: 'cg-1', name: 'A' } },
       { stopId: 'stop-b', campground: { id: 'cg-2', name: 'B' } },
     ];
-    // Fresh copy per call — the test mutates the returned array the way
-    // PrimeNG's in-place row splice does.
+    // Fresh copy per call, so the re-read after the failed save returns the
+    // server order rather than the locally reordered array.
     const getTripStops = vi.fn().mockImplementation(() => Promise.resolve([...serverOrder]));
     const component = configure({
       getTripStops,
@@ -263,12 +257,7 @@ describe('TripDetailComponent', () => {
     });
     await component.ngOnInit();
 
-    // PrimeNG has already spliced the bound array into the new on-screen order.
-    const stopsArray = component.stops();
-    const [moved] = stopsArray.splice(0, 1);
-    stopsArray.splice(1, 0, moved);
-
-    await component.onRowReorder({ dragIndex: 0, dropIndex: 1 });
+    await component.moveStop(0, 1);
 
     expect(component.error()).toBe("Couldn't reorder stops — try again.");
     expect(component.stops().map((s: any) => s.stopId)).toEqual(['stop-a', 'stop-b']);

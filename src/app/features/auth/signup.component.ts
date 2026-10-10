@@ -1,16 +1,14 @@
 import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-import { MessageModule } from 'primeng/message';
 import { SupabaseService } from '../../core/services/supabase.service';
 
 @Component({
   selector: 'app-signup',
   standalone: true,
-  imports: [FormsModule, ButtonModule, InputTextModule, MessageModule, RouterLink],
+  imports: [FormsModule, RouterLink],
   templateUrl: './signup.component.html',
+  styleUrl: './auth.scss',
 })
 export class SignupComponent {
   email = '';

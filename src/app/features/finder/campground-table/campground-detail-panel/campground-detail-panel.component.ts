@@ -1,33 +1,45 @@
 import { Component, Input } from '@angular/core';
-import { FavoriteToggleComponent } from '../../../../shared/favorite-toggle/favorite-toggle.component';
-import { AddToTripComponent } from '../../../../shared/add-to-trip/add-to-trip.component';
 import { Campground } from '../../../../core/models/campground.model';
 
 @Component({
   selector: 'app-campground-detail-panel',
   standalone: true,
-  imports: [FavoriteToggleComponent, AddToTripComponent],
   template: `
     <div class="campground-detail-panel">
-      <h3>{{ campground.name }}</h3>
-      <app-favorite-toggle [campgroundId]="campground.id" />
-      <app-add-to-trip [campgroundId]="campground.id" />
-      <div [innerHTML]="campground.description"></div>
-      <a [href]="campground.reservationUrl" target="_blank" rel="noopener">Reserve on recreation.gov</a>
-      <a [href]="campground.directionsUrl" target="_blank" rel="noopener">Directions</a>
+      <div class="description" [innerHTML]="campground.description"></div>
+      <div class="links">
+        <a class="rt-btn rt-btn--cherry rt-btn--shadow" [href]="campground.reservationUrl" target="_blank" rel="noopener">Reserve on recreation.gov</a>
+        <a class="rt-btn" [href]="campground.directionsUrl" target="_blank" rel="noopener">Directions</a>
+      </div>
     </div>
   `,
   styles: `
     .campground-detail-panel {
-      background: var(--p-highlight-background);
-      border-left: 4px solid var(--p-primary-color);
-      border-radius: 6px;
-      padding: 1rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      cursor: default;
     }
 
-    .campground-detail-panel h3 {
+    .description {
+      font-size: 15px;
+      line-height: 1.5;
+      text-wrap: pretty;
+      overflow-wrap: anywhere;
+    }
+
+    .description :first-child {
       margin-top: 0;
-      color: var(--p-highlight-color);
+    }
+
+    .description :last-child {
+      margin-bottom: 0;
+    }
+
+    .links {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
     }
   `,
 })

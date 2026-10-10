@@ -1,59 +1,67 @@
-<h1>Account</h1>
+<div class="rt-content">
+  <h1 class="rt-title">Account</h1>
 
-<form (ngSubmit)="onSaveDisplayName()">
-  <h2>Display name</h2>
-  <input pInputText type="text" [(ngModel)]="displayName" name="displayName" required />
-  @if (displayNameNotice()) {
-    <p-message severity="success">{{ displayNameNotice() }}</p-message>
-  }
-  @if (displayNameError()) {
-    <p-message severity="error">{{ displayNameError() }}</p-message>
-  }
-  <button pButton type="submit" [disabled]="savingDisplayName() || displayName.trim() === ''">Save Name</button>
-</form>
+  <form class="rt-page-card" (ngSubmit)="onSaveDisplayName()">
+    <h2 class="rt-heading">Display name</h2>
+    <input class="rt-input" type="text" [(ngModel)]="displayName" name="displayName" required aria-label="Display name" />
+    @if (displayNameNotice()) {
+      <p class="rt-notice">{{ displayNameNotice() }}</p>
+    }
+    @if (displayNameError()) {
+      <p class="rt-error">{{ displayNameError() }}</p>
+    }
+    <button type="submit" class="rt-btn rt-btn--cherry rt-btn--shadow card-action" [disabled]="savingDisplayName() || displayName.trim() === ''">Save Name</button>
+  </form>
 
-<form (ngSubmit)="onSavePassword()">
-  <h2>Password</h2>
-  <input pInputText type="password" placeholder="New password" [(ngModel)]="newPassword" name="newPassword" />
-  <input
-    pInputText
-    type="password"
-    placeholder="Confirm password"
-    [(ngModel)]="confirmPassword"
-    name="confirmPassword"
-  />
-  @if (passwordNotice()) {
-    <p-message severity="success">{{ passwordNotice() }}</p-message>
-  }
-  @if (passwordError()) {
-    <p-message severity="error">{{ passwordError() }}</p-message>
-  }
-  <button pButton type="submit" [disabled]="savingPassword() || newPassword === ''">Update Password</button>
-</form>
+  <form class="rt-page-card" (ngSubmit)="onSavePassword()">
+    <h2 class="rt-heading">Password</h2>
+    <div class="password-row">
+      <input class="rt-input" type="password" placeholder="New password" [(ngModel)]="newPassword" name="newPassword" />
+      <input class="rt-input" type="password" placeholder="Confirm password" [(ngModel)]="confirmPassword" name="confirmPassword" />
+    </div>
+    @if (passwordNotice()) {
+      <p class="rt-notice">{{ passwordNotice() }}</p>
+    }
+    @if (passwordError()) {
+      <p class="rt-error">{{ passwordError() }}</p>
+    }
+    <button type="submit" class="rt-btn rt-btn--cherry rt-btn--shadow card-action" [disabled]="savingPassword() || newPassword === ''">Update Password</button>
+  </form>
 
-<div>
-  <h2>Theme</h2>
-  <label>
-    <p-toggleswitch [ngModel]="isDarkTheme()" (ngModelChange)="onThemeToggle($event)" name="theme" />
-    Dark mode
-  </label>
-  @if (themeError()) {
-    <p-message severity="error">{{ themeError() }}</p-message>
-  }
-</div>
+  <div class="rt-page-card">
+    <div class="theme-row">
+      <h2 class="rt-heading">Theme</h2>
+      <button
+        type="button"
+        class="theme-toggle"
+        role="switch"
+        [attr.aria-checked]="isDarkTheme()"
+        (click)="onThemeToggle(!isDarkTheme())"
+      >
+        <span class="track" [class.is-on]="isDarkTheme()"><span class="knob"></span></span>
+        Dark mode
+      </button>
+    </div>
+    @if (themeError()) {
+      <p class="rt-error">{{ themeError() }}</p>
+    }
+  </div>
 
-<div class="danger-zone">
-  <h2>Delete Account</h2>
-  @if (deleteError()) {
-    <p-message severity="error">{{ deleteError() }}</p-message>
-  }
-  @if (confirmingDelete()) {
-    <p>Delete your account? This cannot be undone.</p>
-    <button pButton [text]="true" (click)="onCancelDelete()">Cancel</button>
-    <button pButton severity="danger" [disabled]="deletingAccount()" (click)="onConfirmDelete()">
-      Yes, delete my account
-    </button>
-  } @else {
-    <button pButton severity="danger" (click)="onDeleteAccount()">Delete Account</button>
-  }
+  <div class="rt-page-card danger-zone">
+    <h2 class="rt-heading">Delete Account</h2>
+    @if (deleteError()) {
+      <p class="rt-error">{{ deleteError() }}</p>
+    }
+    @if (confirmingDelete()) {
+      <p class="confirm-text">Delete your account? This cannot be undone.</p>
+      <div class="confirm-actions">
+        <button type="button" class="rt-btn" (click)="onCancelDelete()">Cancel</button>
+        <button type="button" class="rt-btn rt-btn--cherry" [disabled]="deletingAccount()" (click)="onConfirmDelete()">
+          Yes, delete my account
+        </button>
+      </div>
+    } @else {
+      <button type="button" class="rt-btn rt-btn--danger-outline card-action" (click)="onDeleteAccount()">Delete Account</button>
+    }
+  </div>
 </div>

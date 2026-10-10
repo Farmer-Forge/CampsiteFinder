@@ -1,58 +1,30 @@
-<div class="finder">
-  @if (loading()) {
-    <p-message severity="info">Finding campgrounds near you...</p-message>
-  }
-
-  @if (error()) {
-    <p-message severity="warn">{{ error() }}</p-message>
-    @if (locationBlocked()) {
-      <p-message severity="info">
-        Location is blocked for this site. Check your browser's address-bar site settings to allow it, then try again.
-      </p-message>
-    } @else {
-      <button pButton type="button" [text]="true" (click)="onRetryLocation()">Try location again</button>
-    }
-  }
-
-  @if (error() || showLocationForm()) {
-    <form class="manual-location" (ngSubmit)="onManualSubmit()">
-      <input pInputText type="number" step="any" placeholder="Latitude (e.g. 44.31)" [(ngModel)]="manualLat" name="manualLat" required />
-      <input pInputText type="number" step="any" placeholder="Longitude (e.g. -68.21)" [(ngModel)]="manualLng" name="manualLng" required />
-      <button pButton type="submit">Search this location</button>
-    </form>
-    <p class="manual-location-help">
-      Don't know your coordinates? Search "[your city] coordinates" or right-click your location in
-      <a href="https://maps.google.com" target="_blank" rel="noopener">Google Maps</a> and copy the two numbers shown.
-    </p>
-  }
-
-  @if (!error()) {
-    <div class="location-controls">
-      <button pButton type="button" [text]="true" (click)="onToggleLocationForm()">
-        {{ showLocationForm() ? 'Cancel' : 'Change location' }}
-      </button>
-      <button pButton type="button" [text]="true" (click)="onRetryLocation()">Use my current location</button>
+@if (!error()) {
+  <div class="filter-bar">
+    <div class="filter-group" role="group" aria-label="Agency">
+      <span class="rt-label">AGENCY</span>
+      @for (agency of ALL_AGENCIES; track agency) {
+        <button
+          type="button"
+          class="chip"
+          [class.is-on]="selectedAgencies.includes(agency)"
+          [attr.aria-pressed]="selectedAgencies.includes(agency)"
+          (click)="onToggleAgency(agency)"
+        >
+          {{ agency }}
+        </button>
+      }
     </div>
-
-    <div class="agency-filter">
-      <p-multiselect
-        [options]="ALL_AGENCIES"
-        [(ngModel)]="selectedAgencies"
-        [selectAll]="selectedAgencies.length === ALL_AGENCIES.length"
-        (onSelectAllChange)="onToggleAllAgencies($event.checked)"
-        (onChange)="onFilterChange()"
-        selectedItemsLabel="{0} agencies selected"
-        placeholder="Filter by agency"
-        name="agencyFilter"
-      />
+    <div class="filter-group">
       <p-multiselect
         [options]="REGION_NAMES"
         [(ngModel)]="selectedRegions"
         [selectAll]="selectedRegions.length === REGION_NAMES.length"
         (onSelectAllChange)="onToggleAllRegions($event.checked)"
         (onChange)="onRegionFilterChange()"
-        selectedItemsLabel="{0} regions selected"
-        placeholder="Filter by region"
+        [maxSelectedLabels]="selectedRegions.length === REGION_NAMES.length ? 0 : 2"
+        [selectedItemsLabel]="selectedRegions.length === REGION_NAMES.length ? 'All regions' : '{0} regions'"
+        placeholder="No regions"
+        ariaLabel="Region"
         name="regionFilter"
       />
       <p-multiselect
@@ -61,8 +33,11 @@
         [selectAll]="selectedStates.length === ALL_STATES.length"
         (onSelectAllChange)="onToggleAllStates($event.checked)"
         (onChange)="onFilterChange()"
-        selectedItemsLabel="{0} states selected"
-        placeholder="Filter by state"
+        [maxSelectedLabels]="selectedStates.length === ALL_STATES.length ? 0 : 3"
+        [selectedItemsLabel]="selectedStates.length === ALL_STATES.length ? 'All states' : '{0} states'"
+        [filter]="true"
+        placeholder="No states"
+        ariaLabel="State"
         name="stateFilter"
       />
       @if (parkCodes().length > 0) {
@@ -72,42 +47,94 @@
           [selectAll]="selectedParks.length === parkCodes().length"
           (onSelectAllChange)="onToggleAllParks($event.checked)"
           (onChange)="onFilterChange()"
-          selectedItemsLabel="{0} parks selected"
-          placeholder="Filter by park"
+          [maxSelectedLabels]="selectedParks.length === parkCodes().length ? 0 : 3"
+          [selectedItemsLabel]="selectedParks.length === parkCodes().length ? 'All parks' : '{0} parks'"
+          [filter]="true"
+          placeholder="No parks"
+          ariaLabel="Park"
           name="parkFilter"
         />
       }
-      <label class="near-me-toggle">
-        <p-toggleswitch [(ngModel)]="nearMeEnabled" (onChange)="onFilterChange()" name="nearMe" />
-        Near me
-      </label>
-      @if (nearMeEnabled) {
-        <p-select
-          [options]="RADIUS_OPTIONS"
-          [(ngModel)]="radiusMiles"
-          (onChange)="onFilterChange()"
-          name="radiusMiles"
-        >
-          <ng-template #selectedItem let-mi>{{ mi }} mi</ng-template>
-          <ng-template #item let-mi>{{ mi }} mi</ng-template>
-        </p-select>
-      }
     </div>
-  }
+    <div class="filter-group radius-group" role="group" aria-label="Miles from me">
+      <span class="rt-label">MILES FROM ME</span>
+      <div class="segmented">
+        @for (choice of RADIUS_CHOICES; track choice) {
+          <button
+            type="button"
+            [class.is-on]="isRadiusSelected(choice)"
+            [attr.aria-pressed]="isRadiusSelected(choice)"
+            (click)="onRadiusChange(choice)"
+          >
+            {{ choice ?? 'All' }}
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+}
 
-  @if (!loading() && !error()) {
-    <div class="finder-layout">
+@if (!loading() && !error()) {
+  <div class="rt-map-layout">
+    <div class="rt-map-frame">
       <app-campground-map
         [campgrounds]="campgrounds()"
         [selectedId]="selected()?.id ?? null"
         [searchLocation]="searchLocation()"
         (viewDetails)="onViewDetails($event)"
       />
+    </div>
+    <div class="rt-side">
+      <div class="list-header">
+        <h1 class="rt-list-title">{{ campgrounds().length }} campground{{ campgrounds().length === 1 ? '' : 's' }}</h1>
+        <span class="nearest">nearest first</span>
+      </div>
+      <div class="location-controls">
+        <button type="button" class="rt-text-btn rt-text-btn--teal" (click)="onToggleLocationForm()">
+          {{ showLocationForm() ? 'Cancel' : 'Change location' }}
+        </button>
+        <button type="button" class="rt-text-btn rt-text-btn--teal" (click)="onRetryLocation()">Use my current location</button>
+      </div>
+      @if (showLocationForm()) {
+        <ng-container *ngTemplateOutlet="manualLocation" />
+      }
       <app-campground-table
         [campgrounds]="campgrounds()"
         [selected]="selected()"
         (selectedChange)="onSelectionChange($event)"
       />
     </div>
-  }
-</div>
+  </div>
+} @else {
+  <div class="status-area">
+    @if (loading()) {
+      <div class="rt-message">Finding campgrounds near you...</div>
+    }
+
+    @if (error()) {
+      <div class="rt-message rt-message--error">{{ error() }}</div>
+      @if (locationBlocked()) {
+        <div class="rt-message">
+          Location is blocked for this site. Check your browser's address-bar site settings to allow it, then try again.
+        </div>
+      } @else {
+        <button type="button" class="rt-text-btn rt-text-btn--teal retry" (click)="onRetryLocation()">Try location again</button>
+      }
+      <ng-container *ngTemplateOutlet="manualLocation" />
+    }
+  </div>
+}
+
+<ng-template #manualLocation>
+  <div class="rt-dashed-panel">
+    <form class="manual-location" (ngSubmit)="onManualSubmit()">
+      <input class="rt-input" type="number" step="any" placeholder="Latitude (e.g. 44.31)" [(ngModel)]="manualLat" name="manualLat" required />
+      <input class="rt-input" type="number" step="any" placeholder="Longitude (e.g. -68.21)" [(ngModel)]="manualLng" name="manualLng" required />
+      <button type="submit" class="rt-btn rt-btn--cherry rt-btn--shadow">Search this location</button>
+    </form>
+    <p class="manual-location-help">
+      Don't know your coordinates? Search "[your city] coordinates" or right-click your location in
+      <a href="https://maps.google.com" target="_blank" rel="noopener">Google Maps</a> and copy the two numbers shown.
+    </p>
+  </div>
+</ng-template>

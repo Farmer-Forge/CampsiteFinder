@@ -1,12 +1,11 @@
 import { Component, effect, inject } from '@angular/core';
-import { RouterLink, RouterOutlet } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
+import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { SupabaseService } from './core/services/supabase.service';
 import { UserService } from './core/services/user.service';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, ButtonModule],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })

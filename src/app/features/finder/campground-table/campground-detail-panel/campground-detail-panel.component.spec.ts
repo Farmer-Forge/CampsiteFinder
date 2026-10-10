@@ -70,13 +70,6 @@ describe('CampgroundDetailPanelComponent', () => {
     expect(fixture.nativeElement.textContent).not.toContain('<strong>');
   });
 
-  it('renders the campground name', () => {
-    setCampground({ name: 'Riverbend Campground' });
-    fixture.detectChanges();
-
-    expect(fixture.nativeElement.textContent).toContain('Riverbend Campground');
-  });
-
   it('renders reservation and directions links', () => {
     setCampground({
       reservationUrl: 'https://recreation.gov/camping/1',

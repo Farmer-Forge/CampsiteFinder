@@ -281,30 +281,58 @@ describe('FinderComponent', () => {
     );
   });
 
-  it('selects every agency when the agency select-all checkbox is checked', async () => {
+  it('turns an agency off when its chip is toggled', async () => {
     geolocationSpy.getCurrentPosition.mockResolvedValue({ lat: 44.3, lng: -68.2 });
     campgroundsSpy.getNearest.mockResolvedValue([]);
     await component.ngOnInit();
-    component.selectedAgencies = ['NPS'];
 
-    await component.onToggleAllAgencies(true);
+    await component.onToggleAgency('BLM');
 
-    expect(component.selectedAgencies).toEqual(component.ALL_AGENCIES);
+    expect(component.selectedAgencies).toEqual(['NPS', 'USFS', 'USACE', 'FWS']);
     expect(campgroundsSpy.getNearest).toHaveBeenLastCalledWith(
-      { lat: 44.3, lng: -68.2 }, 50, component.ALL_AGENCIES, SHOW_ALL_RADIUS_M, undefined, undefined,
+      { lat: 44.3, lng: -68.2 }, 50, ['NPS', 'USFS', 'USACE', 'FWS'], SHOW_ALL_RADIUS_M, undefined, undefined,
     );
   });
 
-  it('clears every agency when the agency select-all checkbox is unchecked', async () => {
+  it('turns an agency back on in its canonical position', async () => {
+    geolocationSpy.getCurrentPosition.mockResolvedValue({ lat: 44.3, lng: -68.2 });
+    campgroundsSpy.getNearest.mockResolvedValue([]);
+    await component.ngOnInit();
+    component.selectedAgencies = ['NPS', 'FWS'];
+
+    await component.onToggleAgency('BLM');
+
+    expect(component.selectedAgencies).toEqual(['NPS', 'BLM', 'FWS']);
+  });
+
+  it('maps a numeric radius choice onto near-me + radiusMiles', async () => {
     geolocationSpy.getCurrentPosition.mockResolvedValue({ lat: 44.3, lng: -68.2 });
     campgroundsSpy.getNearest.mockResolvedValue([]);
     await component.ngOnInit();
 
-    await component.onToggleAllAgencies(false);
+    await component.onRadiusChange(100);
 
-    expect(component.selectedAgencies).toEqual([]);
+    expect(component.nearMeEnabled).toBe(true);
+    expect(component.radiusMiles).toBe(100);
+    expect(component.isRadiusSelected(100)).toBe(true);
+    expect(component.isRadiusSelected(null)).toBe(false);
     expect(campgroundsSpy.getNearest).toHaveBeenLastCalledWith(
-      { lat: 44.3, lng: -68.2 }, 50, [], SHOW_ALL_RADIUS_M, undefined, undefined,
+      { lat: 44.3, lng: -68.2 }, 50, component.ALL_AGENCIES, 100 * METERS_PER_MILE, undefined, undefined,
+    );
+  });
+
+  it('maps the "All" radius choice to near-me off', async () => {
+    geolocationSpy.getCurrentPosition.mockResolvedValue({ lat: 44.3, lng: -68.2 });
+    campgroundsSpy.getNearest.mockResolvedValue([]);
+    await component.ngOnInit();
+    await component.onRadiusChange(25);
+
+    await component.onRadiusChange(null);
+
+    expect(component.nearMeEnabled).toBe(false);
+    expect(component.isRadiusSelected(null)).toBe(true);
+    expect(campgroundsSpy.getNearest).toHaveBeenLastCalledWith(
+      { lat: 44.3, lng: -68.2 }, 50, component.ALL_AGENCIES, SHOW_ALL_RADIUS_M, undefined, undefined,
     );
   });
 

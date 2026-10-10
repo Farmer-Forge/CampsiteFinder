@@ -43,10 +43,10 @@ describe('AddToTripComponent', () => {
     component = createComponent();
   });
 
-  it('loads trips and the containing-trip set when the popover opens', async () => {
+  it('loads trips and the containing-trip set when the panel opens', async () => {
     getTripIdsSpy.mockResolvedValue(new Set(['trip-1']));
 
-    await component.onShow();
+    await component.load();
 
     expect(loadTripsSpy).toHaveBeenCalled();
     expect(getTripIdsSpy).toHaveBeenCalledWith('cg-1');
@@ -56,60 +56,65 @@ describe('AddToTripComponent', () => {
   it('sets an error if loading trips fails', async () => {
     getTripIdsSpy.mockRejectedValue(new Error('boom'));
 
-    await component.onShow();
+    await component.load();
 
     expect(component.error()).toBe("Couldn't load trips — try again.");
   });
 
   it('adds the campground to an existing trip and marks it as containing', async () => {
-    const popover = { hide: vi.fn() } as any;
+    const done = vi.fn();
+    component.done.subscribe(done);
 
-    await component.onAdd('trip-1', popover);
+    await component.onAdd('trip-1');
 
     expect(addStopSpy).toHaveBeenCalledWith('trip-1', 'cg-1');
     expect(component.tripsContaining()).toEqual(new Set(['trip-1']));
-    expect(popover.hide).toHaveBeenCalled();
+    expect(done).toHaveBeenCalled();
   });
 
-  it('sets an error and leaves the popover open if adding to a trip fails', async () => {
+  it('sets an error and keeps the panel open if adding to a trip fails', async () => {
     addStopSpy.mockRejectedValue(new Error('boom'));
-    const popover = { hide: vi.fn() } as any;
+    const done = vi.fn();
+    component.done.subscribe(done);
 
-    await component.onAdd('trip-1', popover);
+    await component.onAdd('trip-1');
 
     expect(component.error()).toBe("Couldn't add to that trip — try again.");
-    expect(popover.hide).not.toHaveBeenCalled();
+    expect(done).not.toHaveBeenCalled();
   });
 
   it('creates a new trip with this campground and clears the draft name', async () => {
-    const popover = { hide: vi.fn() } as any;
+    const done = vi.fn();
+    component.done.subscribe(done);
     component.newTripName = '  Maine Coast  ';
 
-    await component.onCreateAndAdd(popover);
+    await component.onCreateAndAdd();
 
     expect(createTripSpy).toHaveBeenCalledWith('Maine Coast', ['cg-1']);
     expect(component.newTripName).toBe('');
-    expect(popover.hide).toHaveBeenCalled();
+    expect(done).toHaveBeenCalled();
   });
 
   it('does not create a trip when the draft name is blank', async () => {
-    const popover = { hide: vi.fn() } as any;
+    const done = vi.fn();
+    component.done.subscribe(done);
     component.newTripName = '   ';
 
-    await component.onCreateAndAdd(popover);
+    await component.onCreateAndAdd();
 
     expect(createTripSpy).not.toHaveBeenCalled();
-    expect(popover.hide).not.toHaveBeenCalled();
+    expect(done).not.toHaveBeenCalled();
   });
 
-  it('sets an error and leaves the popover open if creating a trip fails', async () => {
+  it('sets an error and keeps the panel open if creating a trip fails', async () => {
     createTripSpy.mockRejectedValue(new Error('boom'));
-    const popover = { hide: vi.fn() } as any;
+    const done = vi.fn();
+    component.done.subscribe(done);
     component.newTripName = 'Maine Coast';
 
-    await component.onCreateAndAdd(popover);
+    await component.onCreateAndAdd();
 
     expect(component.error()).toBe("Couldn't create that trip — try again.");
-    expect(popover.hide).not.toHaveBeenCalled();
+    expect(done).not.toHaveBeenCalled();
   });
 });

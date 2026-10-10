@@ -1,90 +1,101 @@
-<h1>Admin</h1>
+<div class="rt-content admin">
+  <h1 class="rt-title">Admin</h1>
 
-@if (statsError()) {
-  <p-message severity="error">{{ statsError() }}</p-message>
-}
-@if (stats(); as s) {
-  <div class="admin-stats">
-    <div class="admin-stat">
-      <span class="admin-stat-value">{{ s.favoritesCount }}</span>
-      <span class="admin-stat-label">Favorites</span>
+  @if (statsError()) {
+    <p class="rt-error">{{ statsError() }}</p>
+  }
+  @if (stats(); as s) {
+    <div class="admin-stats">
+      <div class="admin-stat">
+        <span class="admin-stat-value favorites">{{ s.favoritesCount }}</span>
+        <span class="admin-stat-label">Favorites</span>
+      </div>
+      <div class="admin-stat">
+        <span class="admin-stat-value trips">{{ s.tripsCount }}</span>
+        <span class="admin-stat-label">Trips</span>
+      </div>
     </div>
-    <div class="admin-stat">
-      <span class="admin-stat-value">{{ s.tripsCount }}</span>
-      <span class="admin-stat-label">Trips</span>
-    </div>
+  }
+
+  <div class="tabs" role="tablist">
+    <button type="button" role="tab" class="tab" [class.active]="activeTab() === 'users'" [attr.aria-selected]="activeTab() === 'users'" (click)="activeTab.set('users')">Users</button>
+    <button type="button" role="tab" class="tab" [class.active]="activeTab() === 'attributes'" [attr.aria-selected]="activeTab() === 'attributes'" (click)="activeTab.set('attributes')">Campground Attributes</button>
   </div>
-}
 
-<p-tabs value="0">
-  <p-tablist>
-    <p-tab value="0">Users</p-tab>
-    <p-tab value="1">Campground Attributes</p-tab>
-  </p-tablist>
-  <p-tabpanels>
-    <p-tabpanel value="0">
+  @if (activeTab() === 'users') {
+    <div class="tab-panel" role="tabpanel">
       @if (usersError()) {
-        <p-message severity="error">{{ usersError() }}</p-message>
+        <p class="rt-error">{{ usersError() }}</p>
       }
       <form class="add-user-form" (ngSubmit)="onInviteUser()">
-        <input pInputText type="email" placeholder="Email" [(ngModel)]="newUserEmail" name="newUserEmail" required />
-        <input pInputText type="text" placeholder="Display name (optional)" [(ngModel)]="newUserDisplayName" name="newUserDisplayName" />
-        <button pButton type="submit">Invite User</button>
+        <input class="rt-input" type="email" placeholder="Email" [(ngModel)]="newUserEmail" name="newUserEmail" required />
+        <input class="rt-input" type="text" placeholder="Display name (optional)" [(ngModel)]="newUserDisplayName" name="newUserDisplayName" />
+        <button type="submit" class="rt-btn rt-btn--cherry rt-btn--shadow">Invite User</button>
       </form>
-      <p-table [value]="users()">
-        <ng-template #header>
-          <tr>
-            <th>Email</th>
-            <th>Display Name</th>
-            <th>Role</th>
-            <th>Suspended</th>
-            <th>Created</th>
-            <th></th>
-          </tr>
-        </ng-template>
-        <ng-template #body let-user>
-          <tr>
-            @if (editingUserId() === user.id) {
-              <td><input pInputText type="email" [(ngModel)]="editEmail" /></td>
-              <td><input pInputText type="text" [(ngModel)]="editDisplayName" /></td>
-            } @else {
-              <td>{{ user.email }}</td>
-              <td>{{ user.displayName }}</td>
+      <div class="rt-table-card">
+        <table class="rt-table users-table">
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Display Name</th>
+              <th>Role</th>
+              <th>Suspended</th>
+              <th>Created</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (user of users(); track user.id) {
+              <tr>
+                @if (editingUserId() === user.id) {
+                  <td><input class="rt-input" type="email" [(ngModel)]="editEmail" aria-label="Email" /></td>
+                  <td><input class="rt-input" type="text" [(ngModel)]="editDisplayName" aria-label="Display name" /></td>
+                } @else {
+                  <td class="email">{{ user.email }}</td>
+                  <td>{{ user.displayName }}</td>
+                }
+                <td>
+                  <p-select
+                    [ngModel]="user.role"
+                    [options]="roleOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    class="role-pill"
+                    [class.role-admin]="user.role === 'admin'"
+                    ariaLabel="Role"
+                    (onChange)="onRoleChange(user.id, $event.value)"
+                  />
+                </td>
+                <td>
+                  <button type="button" class="rt-text-btn rt-text-btn--teal" (click)="onToggleSuspended(user)">
+                    {{ user.suspended ? 'Unsuspend' : 'Suspend' }}
+                  </button>
+                </td>
+                <td>{{ user.createdAt | date }}</td>
+                <td>
+                  <div class="rt-row-actions">
+                    @if (confirmingDeleteUserId() === user.id) {
+                      <button type="button" class="rt-text-btn" (click)="onCancelDeleteUser()">Cancel</button>
+                      <button type="button" class="rt-btn rt-btn--sm rt-btn--cherry" (click)="onConfirmDeleteUser(user.id)">Yes, delete</button>
+                    } @else if (editingUserId() === user.id) {
+                      <button type="button" class="rt-text-btn" (click)="onCancelEditUser()">Cancel</button>
+                      <button type="button" class="rt-btn rt-btn--sm rt-btn--cherry" (click)="onSaveEditUser(user)">Save</button>
+                    } @else {
+                      <button type="button" class="rt-text-btn" (click)="onStartEditUser(user)">Edit</button>
+                      <button type="button" class="rt-text-btn rt-text-btn--cherry" (click)="onDeleteUser(user.id)">Delete</button>
+                    }
+                  </div>
+                </td>
+              </tr>
             }
-            <td>
-              <p-select
-                [ngModel]="user.role"
-                [options]="roleOptions"
-                optionLabel="label"
-                optionValue="value"
-                (onChange)="onRoleChange(user.id, $event.value)"
-              />
-            </td>
-            <td>
-              <button pButton [text]="true" (click)="onToggleSuspended(user)">
-                {{ user.suspended ? 'Unsuspend' : 'Suspend' }}
-              </button>
-            </td>
-            <td>{{ user.createdAt | date }}</td>
-            <td>
-              @if (confirmingDeleteUserId() === user.id) {
-                <button pButton [text]="true" (click)="onCancelDeleteUser()">Cancel</button>
-                <button pButton severity="danger" (click)="onConfirmDeleteUser(user.id)">Yes, delete</button>
-              } @else if (editingUserId() === user.id) {
-                <button pButton [text]="true" (click)="onCancelEditUser()">Cancel</button>
-                <button pButton (click)="onSaveEditUser(user)">Save</button>
-              } @else {
-                <button pButton [text]="true" (click)="onStartEditUser(user)">Edit</button>
-                <button pButton severity="danger" [text]="true" (click)="onDeleteUser(user.id)">Delete</button>
-              }
-            </td>
-          </tr>
-        </ng-template>
-      </p-table>
-    </p-tabpanel>
-    <p-tabpanel value="1">
+          </tbody>
+        </table>
+      </div>
+    </div>
+  } @else {
+    <div class="tab-panel" role="tabpanel">
       @if (attributesError()) {
-        <p-message severity="error">{{ attributesError() }}</p-message>
+        <p class="rt-error">{{ attributesError() }}</p>
       }
       <p-autocomplete
         [(ngModel)]="selectedCampground"
@@ -92,51 +103,60 @@
         optionLabel="name"
         placeholder="Search campgrounds by name"
         [forceSelection]="true"
+        class="campground-search"
         (completeMethod)="onSearchCampgrounds($event)"
         (onSelect)="onSelectCampground($event)"
       />
 
       @if (selectedCampground) {
-        <p-table [value]="attributes()">
-          <ng-template #header>
-            <tr>
-              <th>Type</th>
-              <th>Name</th>
-              <th>Value</th>
-              <th></th>
-            </tr>
-          </ng-template>
-          <ng-template #body let-attribute>
-            <tr>
-              @if (editingAttributeId() === attribute.id) {
-                <td><input pInputText type="text" [(ngModel)]="editAttributeType" /></td>
-                <td><input pInputText type="text" [(ngModel)]="editAttributeName" /></td>
-                <td><input pInputText type="text" [(ngModel)]="editAttributeValue" /></td>
-                <td>
-                  <button pButton [text]="true" (click)="onCancelEditAttribute()">Cancel</button>
-                  <button pButton (click)="onSaveEditAttribute(attribute.id)">Save</button>
-                </td>
-              } @else {
-                <td>{{ attribute.type }}</td>
-                <td>{{ attribute.name }}</td>
-                <td>{{ attribute.value }}</td>
-                <td>
-                  <button pButton [text]="true" (click)="onStartEditAttribute(attribute)">Edit</button>
-                  <button pButton severity="danger" [text]="true" (click)="onDeleteAttribute(attribute.id)">Delete</button>
-                </td>
+        <div class="rt-table-card">
+          <table class="rt-table">
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Name</th>
+                <th>Value</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (attribute of attributes(); track attribute.id) {
+                <tr>
+                  @if (editingAttributeId() === attribute.id) {
+                    <td><input class="rt-input" type="text" [(ngModel)]="editAttributeType" aria-label="Type" /></td>
+                    <td><input class="rt-input" type="text" [(ngModel)]="editAttributeName" aria-label="Name" /></td>
+                    <td><input class="rt-input" type="text" [(ngModel)]="editAttributeValue" aria-label="Value" /></td>
+                    <td>
+                      <div class="rt-row-actions">
+                        <button type="button" class="rt-text-btn" (click)="onCancelEditAttribute()">Cancel</button>
+                        <button type="button" class="rt-btn rt-btn--sm rt-btn--cherry" (click)="onSaveEditAttribute(attribute.id)">Save</button>
+                      </div>
+                    </td>
+                  } @else {
+                    <td>{{ attribute.type }}</td>
+                    <td class="attr-name">{{ attribute.name }}</td>
+                    <td>{{ attribute.value }}</td>
+                    <td>
+                      <div class="rt-row-actions">
+                        <button type="button" class="rt-text-btn" (click)="onStartEditAttribute(attribute)">Edit</button>
+                        <button type="button" class="rt-text-btn rt-text-btn--cherry" (click)="onDeleteAttribute(attribute.id)">Delete</button>
+                      </div>
+                    </td>
+                  }
+                </tr>
               }
-            </tr>
-          </ng-template>
-          <ng-template #footer>
-            <tr>
-              <td><input pInputText type="text" placeholder="Type" [(ngModel)]="newAttributeType" /></td>
-              <td><input pInputText type="text" placeholder="Name" [(ngModel)]="newAttributeName" /></td>
-              <td><input pInputText type="text" placeholder="Value" [(ngModel)]="newAttributeValue" /></td>
-              <td><button pButton (click)="onAddAttribute()">Add</button></td>
-            </tr>
-          </ng-template>
-        </p-table>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td><input class="rt-input" type="text" placeholder="Type" [(ngModel)]="newAttributeType" aria-label="New type" /></td>
+                <td><input class="rt-input" type="text" placeholder="Name" [(ngModel)]="newAttributeName" aria-label="New name" /></td>
+                <td><input class="rt-input" type="text" placeholder="Value" [(ngModel)]="newAttributeValue" aria-label="New value" /></td>
+                <td><button type="button" class="rt-btn rt-btn--sm rt-btn--mustard" (click)="onAddAttribute()">Add</button></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
       }
-    </p-tabpanel>
-  </p-tabpanels>
-</p-tabs>
+    </div>
+  }
+</div>

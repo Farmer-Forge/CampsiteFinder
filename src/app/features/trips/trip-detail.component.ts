@@ -1,11 +1,7 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import { TableModule } from 'primeng/table';
-import type { TableRowReorderEvent } from 'primeng/types/table';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-import { MessageModule } from 'primeng/message';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CampgroundMapComponent } from '../finder/campground-map/campground-map.component';
 import { CampgroundDetailPanelComponent } from '../finder/campground-table/campground-detail-panel/campground-detail-panel.component';
 import { TripsService } from '../../core/services/trips.service';
@@ -17,19 +13,147 @@ import { Campground } from '../../core/models/campground.model';
 @Component({
   selector: 'app-trip-detail',
   standalone: true,
-  imports: [
-    TableModule,
-    ButtonModule,
-    InputTextModule,
-    MessageModule,
-    FormsModule,
-    CampgroundMapComponent,
-    CampgroundDetailPanelComponent,
-  ],
+  imports: [DatePipe, FormsModule, RouterLink, CampgroundMapComponent, CampgroundDetailPanelComponent],
   templateUrl: './trip-detail.component.html',
   styles: `
-    .campground-name-link {
+    :host {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .back-link {
+      align-self: flex-start;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--rt-teal);
+      text-decoration: none;
+    }
+    .trip-header {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .rename-row {
+      display: flex;
+      gap: 8px;
+    }
+    .rename-row .rt-input {
+      flex: 1;
+      font-size: 18px;
+      padding: 8px 14px;
+    }
+    .meta-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .meta {
+      font-size: 14px;
+      font-weight: 600;
+      margin-right: auto;
+    }
+    .stop-card {
+      flex: none;
+      border: 2px solid var(--rt-ink);
+      border-radius: 14px;
+      background: var(--rt-card);
+      box-shadow: 3px 3px 0 var(--rt-ink);
+    }
+    .stop-card.is-open {
+      background: var(--rt-cream);
+    }
+    .card-main {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      padding: 12px 14px;
       cursor: pointer;
+    }
+    .stop-badge {
+      width: 58px;
+      height: 58px;
+      flex: none;
+      box-sizing: border-box;
+      border-radius: 50%;
+      background: var(--rt-cherry);
+      color: var(--rt-cream);
+      border: 2px solid var(--rt-ink);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      gap: 2px;
+    }
+    .badge-top {
+      font-family: var(--rt-display);
+      font-size: 17px;
+    }
+    .badge-sub {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+    }
+    .card-text {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .campground-name-link {
+      font-weight: 700;
+      font-size: 17px;
+      line-height: 1.3;
+    }
+    .tags {
+      display: flex;
+      gap: 6px;
+    }
+    .reorder {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .reorder button {
+      width: 30px;
+      height: 24px;
+      padding: 0;
+      border: 2px solid var(--rt-ink);
+      border-radius: 6px;
+      background: var(--rt-cream);
+      color: var(--rt-ink);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .reorder button:disabled {
+      opacity: 0.3;
+      cursor: default;
+    }
+    .detail {
+      padding: 2px 14px 16px 86px;
+    }
+    .add-stop {
+      display: flex;
+      gap: 8px;
+      padding-top: 14px;
+      border-top: 2px dashed var(--rt-ink);
+    }
+    .add-stop .rt-input {
+      flex: 1;
+    }
+    @media (max-width: 900px) {
+      :host {
+        flex: none;
+      }
+      .detail {
+        padding-left: 14px;
+      }
     }
   `,
 })
@@ -150,13 +274,12 @@ export class TripDetailComponent implements OnInit {
     this.stops.update((stops) => stops.filter((s) => s.stopId !== stopId));
   }
 
-  async onRowReorder(event: TableRowReorderEvent): Promise<void> {
-    // PrimeNG's Table.onRowDrop already reorders the bound array in place
-    // (splices the moved row into its new position) before emitting this
-    // event — this.stops() already reflects the new order. Just republish
-    // a fresh array reference so the signal notifies downstream consumers,
-    // then persist the order that's already there.
-    const reordered = [...this.stops()];
+  async moveStop(index: number, delta: -1 | 1): Promise<void> {
+    const target = index + delta;
+    const current = this.stops();
+    if (target < 0 || target >= current.length) return;
+    const reordered = [...current];
+    [reordered[index], reordered[target]] = [reordered[target], reordered[index]];
     this.stops.set(reordered);
     this.error.set(null);
     try {
@@ -166,10 +289,10 @@ export class TripDetailComponent implements OnInit {
       );
     } catch {
       this.error.set("Couldn't reorder stops — try again.");
-      // The on-screen order came from PrimeNG's in-place splice, so it no
-      // longer matches the database (and reorderStops may have persisted
-      // some positions before failing). Re-read the stops so what's shown is
-      // what's stored; if that read fails too, leave the error message up.
+      // The on-screen order no longer matches the database (and reorderStops
+      // may have persisted some positions before failing). Re-read the stops
+      // so what's shown is what's stored; if that read fails too, leave the
+      // error message up.
       try {
         this.stops.set(await this.tripsService.getTripStops(this.tripId));
       } catch {

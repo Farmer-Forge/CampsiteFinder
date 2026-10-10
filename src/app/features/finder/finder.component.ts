@@ -1,11 +1,7 @@
 import { Component, OnInit, signal } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-import { MessageModule } from 'primeng/message';
 import { MultiSelectModule } from 'primeng/multiselect';
-import { SelectModule } from 'primeng/select';
-import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { CampgroundMapComponent } from './campground-map/campground-map.component';
 import { CampgroundTableComponent } from './campground-table/campground-table.component';
 import { GeolocationService, Coordinates } from '../../core/services/geolocation.service';
@@ -25,13 +21,9 @@ export const SHOW_ALL_RADIUS_M = 20_038_000;
   imports: [
     CampgroundMapComponent,
     CampgroundTableComponent,
-    MessageModule,
+    NgTemplateOutlet,
     FormsModule,
-    ButtonModule,
-    InputTextModule,
     MultiSelectModule,
-    SelectModule,
-    ToggleSwitchModule,
   ],
   templateUrl: './finder.component.html',
   styleUrl: './finder.component.scss',
@@ -49,6 +41,8 @@ export class FinderComponent implements OnInit {
 
   readonly ALL_AGENCIES = ['NPS', 'USFS', 'BLM', 'USACE', 'FWS'];
   readonly RADIUS_OPTIONS = [25, 50, 100, 250];
+  // "Miles from me" segmented control: null is "All" (near-me off).
+  readonly RADIUS_CHOICES: (number | null)[] = [null, ...this.RADIUS_OPTIONS];
   readonly REGIONS: Record<string, string[]> = {
     Northeast: ['CT', 'ME', 'MA', 'NH', 'RI', 'VT', 'NJ', 'NY', 'PA'],
     Midwest: ['IL', 'IN', 'IA', 'KS', 'MI', 'MN', 'MO', 'NE', 'ND', 'OH', 'SD', 'WI'],
@@ -154,6 +148,25 @@ export class FinderComponent implements OnInit {
     return location ? this.loadNearest(location) : Promise.resolve();
   }
 
+  onToggleAgency(agency: string): Promise<void> {
+    this.selectedAgencies = this.selectedAgencies.includes(agency)
+      ? this.selectedAgencies.filter((a) => a !== agency)
+      : this.ALL_AGENCIES.filter((a) => a === agency || this.selectedAgencies.includes(a));
+    return this.onFilterChange();
+  }
+
+  isRadiusSelected(choice: number | null): boolean {
+    return choice === null ? !this.nearMeEnabled : this.nearMeEnabled && this.radiusMiles === choice;
+  }
+
+  onRadiusChange(choice: number | null): Promise<void> {
+    this.nearMeEnabled = choice !== null;
+    if (choice !== null) {
+      this.radiusMiles = choice;
+    }
+    return this.onFilterChange();
+  }
+
   onRegionFilterChange(): Promise<void> {
     this.selectedStates = this.selectedRegions.flatMap((region) => this.REGIONS[region]);
     return this.onFilterChange();
@@ -165,11 +178,6 @@ export class FinderComponent implements OnInit {
   // reality — see conversation) switches it to "controlled" mode: the
   // component stops updating the model itself and only emits this event, so
   // each filter needs its own handler to apply the all-or-nothing toggle.
-  onToggleAllAgencies(checked: boolean): Promise<void> {
-    this.selectedAgencies = checked ? [...this.ALL_AGENCIES] : [];
-    return this.onFilterChange();
-  }
-
   onToggleAllRegions(checked: boolean): Promise<void> {
     this.selectedRegions = checked ? [...this.REGION_NAMES] : [];
     return this.onRegionFilterChange();

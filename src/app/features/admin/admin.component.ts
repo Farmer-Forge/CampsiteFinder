@@ -1,12 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { TableModule } from 'primeng/table';
-import { TabsModule } from 'primeng/tabs';
 import { SelectModule } from 'primeng/select';
-import { ButtonModule } from 'primeng/button';
-import { MessageModule } from 'primeng/message';
-import { InputTextModule } from 'primeng/inputtext';
 import { AutoCompleteModule, AutoCompleteCompleteEvent, AutoCompleteSelectEvent } from 'primeng/autocomplete';
 import { AdminUsersService } from '../../core/services/admin-users.service';
 import { AdminStatsService } from '../../core/services/admin-stats.service';
@@ -29,30 +24,114 @@ interface CampgroundOption {
 @Component({
   selector: 'app-admin',
   standalone: true,
-  imports: [DatePipe, FormsModule, TableModule, TabsModule, SelectModule, ButtonModule, MessageModule, InputTextModule, AutoCompleteModule],
+  imports: [DatePipe, FormsModule, SelectModule, AutoCompleteModule],
   templateUrl: './admin.component.html',
   styles: `
+    .admin {
+      max-width: 1200px;
+    }
     .admin-stats {
       display: flex;
-      gap: 2rem;
-      margin-bottom: 1rem;
+      gap: 20px;
+      flex-wrap: wrap;
     }
     .admin-stat {
       display: flex;
-      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 22px 14px 14px;
+      border: 3px solid var(--rt-ink);
+      border-radius: 999px;
+      background: var(--rt-card);
+      box-shadow: 4px 4px 0 var(--rt-ink);
     }
     .admin-stat-value {
-      font-size: 1.5rem;
-      font-weight: 700;
+      width: 64px;
+      height: 64px;
+      box-sizing: border-box;
+      border-radius: 50%;
+      border: 2px solid var(--rt-ink);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--rt-display);
+      font-size: 22px;
+    }
+    .admin-stat-value.favorites {
+      background: var(--rt-mustard);
+    }
+    .admin-stat-value.trips {
+      background: var(--rt-teal);
+      color: var(--rt-cream);
     }
     .admin-stat-label {
-      color: var(--p-text-muted-color);
-      font-size: 0.85rem;
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .tabs {
+      display: flex;
+      gap: 6px;
+      border-bottom: 3px solid var(--rt-ink);
+      margin-bottom: -8px;
+    }
+    .tab {
+      font: inherit;
+      font-weight: 700;
+      font-size: 15px;
+      padding: 10px 20px;
+      border: 3px solid var(--rt-ink);
+      border-bottom: none;
+      border-radius: 12px 12px 0 0;
+      margin-bottom: -3px;
+      cursor: pointer;
+      background: var(--rt-sand);
+      color: var(--rt-ink);
+    }
+    .tab.active {
+      background: var(--rt-card);
+      padding-bottom: 13px;
+    }
+    .tab-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
     }
     .add-user-form {
       display: flex;
-      gap: 0.5rem;
-      margin-bottom: 1rem;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .add-user-form .rt-input {
+      flex: 1;
+      min-width: 200px;
+    }
+    .users-table {
+      min-width: 860px;
+    }
+    .email,
+    .attr-name {
+      font-weight: 600;
+    }
+    :host ::ng-deep .role-pill {
+      border-radius: 999px !important;
+      border-width: 1.5px !important;
+    }
+    :host ::ng-deep .role-pill .p-select-label {
+      font-size: 12px;
+      font-weight: 700;
+      padding: 3px 0 3px 10px !important;
+    }
+    :host ::ng-deep .role-pill.role-admin {
+      background: var(--rt-mustard) !important;
+    }
+    :host ::ng-deep .campground-search {
+      max-width: 480px;
+      width: 100%;
+    }
+    :host ::ng-deep .campground-search .p-autocomplete-input {
+      width: 100%;
     }
   `,
 })
@@ -61,6 +140,7 @@ export class AdminComponent implements OnInit {
   private readonly adminStatsService = inject(AdminStatsService);
 
   readonly roleOptions = ROLE_OPTIONS;
+  readonly activeTab = signal<'users' | 'attributes'>('users');
   readonly users = this.adminUsersService.users;
   readonly usersError = signal<string | null>(null);
   readonly confirmingDeleteUserId = signal<string | null>(null);

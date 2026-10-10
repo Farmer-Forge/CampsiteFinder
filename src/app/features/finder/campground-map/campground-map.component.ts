@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges, inject } from '@angular/core';
 import { LeafletModule } from '@bluehalo/ngx-leaflet';
 import { LeafletMarkerClusterModule } from '@bluehalo/ngx-leaflet-markercluster';
 import * as L from 'leaflet';
@@ -47,7 +47,7 @@ L.Icon.Default.mergeOptions({
   `,
   styleUrl: './campground-map.component.scss',
 })
-export class CampgroundMapComponent implements OnChanges {
+export class CampgroundMapComponent implements OnChanges, OnDestroy {
   @Input({ required: true }) campgrounds: Campground[] = [];
   @Input() selectedId: string | null = null;
   @Input() ordered = false;
@@ -58,6 +58,7 @@ export class CampgroundMapComponent implements OnChanges {
   private readonly supabase = inject(SupabaseService);
 
   private map: L.Map | undefined;
+  private resizeObserver: ResizeObserver | undefined;
 
   readonly mapOptions: L.MapOptions = {
     layers: [
@@ -85,6 +86,17 @@ export class CampgroundMapComponent implements OnChanges {
 
   onMapReady(map: L.Map): void {
     this.map = map;
+    // The map fills a flex/grid frame whose size changes with layout (window
+    // resizes, the mobile breakpoint, the side list growing) — Leaflet only
+    // watches window resizes on its own, so re-measure whenever the container does.
+    if (typeof ResizeObserver !== 'undefined') {
+      this.resizeObserver = new ResizeObserver(() => map.invalidateSize());
+      this.resizeObserver.observe(map.getContainer());
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.resizeObserver?.disconnect();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
