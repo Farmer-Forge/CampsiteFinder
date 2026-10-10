@@ -6,6 +6,7 @@ import { CampgroundMapComponent } from './campground-map/campground-map.componen
 import { CampgroundTableComponent } from './campground-table/campground-table.component';
 import { GeolocationService, Coordinates } from '../../core/services/geolocation.service';
 import { CampgroundsService } from '../../core/services/campgrounds.service';
+import { FinderSnapshot, FinderStateService } from '../../core/services/finder-state.service';
 import { Campground } from '../../core/models/campground.model';
 
 export const METERS_PER_MILE = 1609.34;
@@ -69,17 +70,41 @@ export class FinderComponent implements OnInit {
   constructor(
     private readonly geolocation: GeolocationService,
     private readonly campgroundsService: CampgroundsService,
+    private readonly finderState: FinderStateService,
   ) {}
 
   async ngOnInit(): Promise<void> {
-    await Promise.all([this.loadNearest(), this.loadParkCodes()]);
+    const saved = this.finderState.snapshot();
+    if (!saved) {
+      await Promise.all([this.loadNearest(), this.loadParkCodes()]);
+      return;
+    }
+    this.applySnapshot(saved);
+    // Sequential, unlike the fresh-start path: the saved park selection can
+    // only be resolved once the park list is known — querying first would
+    // send (and then re-save) it as "all parks".
+    await this.loadParkCodes(saved.parks);
+    await this.loadNearest(saved.location);
   }
 
-  private async loadParkCodes(): Promise<void> {
+  // Saved filters may predate a change to the option lists, so keep only
+  // values that are still offered (in canonical order).
+  private applySnapshot(saved: FinderSnapshot): void {
+    this.selectedAgencies = this.ALL_AGENCIES.filter((a) => saved.agencies.includes(a));
+    this.selectedStates = this.ALL_STATES.filter((s) => saved.states.includes(s));
+    this.selectedRegions = this.REGION_NAMES.filter((r) => saved.regions.includes(r));
+    this.nearMeEnabled = saved.nearMeEnabled;
+    if (this.RADIUS_OPTIONS.includes(saved.radiusMiles)) {
+      this.radiusMiles = saved.radiusMiles;
+    }
+  }
+
+  // `savedParks` null (or absent) means "all parks", the default.
+  private async loadParkCodes(savedParks: string[] | null = null): Promise<void> {
     try {
       const codes = await this.campgroundsService.getParkCodes();
       this.parkCodes.set(codes);
-      this.selectedParks = [...codes];
+      this.selectedParks = savedParks ? codes.filter((c) => savedParks.includes(c)) : [...codes];
     } catch {
       // Non-critical: the park filter just ends up with nothing to offer.
     }
@@ -114,6 +139,15 @@ export class FinderComponent implements OnInit {
         parks,
       );
       this.campgrounds.set(results);
+      this.finderState.save({
+        location,
+        agencies: [...this.selectedAgencies],
+        states: [...this.selectedStates],
+        regions: [...this.selectedRegions],
+        parks: parks ? [...parks] : null,
+        nearMeEnabled: this.nearMeEnabled,
+        radiusMiles: this.radiusMiles,
+      });
     } catch (err) {
       this.error.set(err instanceof Error ? err.message : 'Unable to load nearby campgrounds.');
       // Only a failed *browser* lookup implies anything about site

@@ -3,6 +3,7 @@ import { vi } from 'vitest';
 import { FinderComponent, SHOW_ALL_RADIUS_M, METERS_PER_MILE } from './finder.component';
 import { GeolocationService } from '../../core/services/geolocation.service';
 import { CampgroundsService } from '../../core/services/campgrounds.service';
+import { FinderSnapshot, FinderStateService } from '../../core/services/finder-state.service';
 
 describe('FinderComponent', () => {
   let fixture: ComponentFixture<FinderComponent>;
@@ -11,6 +12,9 @@ describe('FinderComponent', () => {
   let campgroundsSpy: { getNearest: ReturnType<typeof vi.fn>; getParkCodes: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
+    // FinderStateService mirrors to sessionStorage, which outlives each
+    // TestBed's root injector — clear it so saved searches don't leak between tests.
+    sessionStorage.clear();
     geolocationSpy = {
       getCurrentPosition: vi.fn(),
       checkPermissionState: vi.fn().mockResolvedValue('unsupported'),
@@ -27,6 +31,10 @@ describe('FinderComponent', () => {
 
     fixture = TestBed.createComponent(FinderComponent);
     component = fixture.componentInstance;
+  });
+
+  afterEach(() => {
+    sessionStorage.clear();
   });
 
   it('loads nearest campgrounds using the browser location on init', async () => {
@@ -415,5 +423,106 @@ describe('FinderComponent', () => {
     expect(campgroundsSpy.getNearest).toHaveBeenLastCalledWith(
       { lat: 44.3, lng: -68.2 }, 50, component.ALL_AGENCIES, SHOW_ALL_RADIUS_M, component.REGIONS['West'], undefined,
     );
+  });
+
+  describe('remembering the last search', () => {
+    const SAVED: FinderSnapshot = {
+      location: { lat: 10, lng: 20 },
+      agencies: ['NPS', 'BLM'],
+      states: ['ME', 'NH'],
+      regions: ['Northeast'],
+      parks: ['acad'],
+      nearMeEnabled: true,
+      radiusMiles: 100,
+    };
+
+    it('saves the location and filters after a successful load', async () => {
+      geolocationSpy.getCurrentPosition.mockResolvedValue({ lat: 44.3, lng: -68.2 });
+      campgroundsSpy.getNearest.mockResolvedValue([]);
+      await component.ngOnInit();
+
+      component.selectedAgencies = ['USFS'];
+      component.nearMeEnabled = true;
+      component.radiusMiles = 25;
+      await component.onFilterChange();
+
+      expect(TestBed.inject(FinderStateService).snapshot()).toEqual({
+        location: { lat: 44.3, lng: -68.2 },
+        agencies: ['USFS'],
+        states: component.ALL_STATES,
+        regions: component.REGION_NAMES,
+        parks: null,
+        nearMeEnabled: true,
+        radiusMiles: 25,
+      });
+    });
+
+    it('does not save when the load fails', async () => {
+      campgroundsSpy.getNearest.mockRejectedValue(new Error('network down'));
+
+      await component.loadNearest({ lat: 10, lng: 20 });
+
+      expect(TestBed.inject(FinderStateService).snapshot()).toBeNull();
+    });
+
+    it('reuses a saved search on init instead of asking the browser for a location', async () => {
+      TestBed.inject(FinderStateService).save(SAVED);
+      campgroundsSpy.getParkCodes.mockResolvedValue(['acad', 'yell']);
+      campgroundsSpy.getNearest.mockResolvedValue([]);
+
+      await component.ngOnInit();
+
+      expect(geolocationSpy.getCurrentPosition).not.toHaveBeenCalled();
+      expect(component.searchLocation()).toEqual({ lat: 10, lng: 20 });
+      expect(component.selectedAgencies).toEqual(['NPS', 'BLM']);
+      expect(component.selectedRegions).toEqual(['Northeast']);
+      expect(component.nearMeEnabled).toBe(true);
+      expect(component.radiusMiles).toBe(100);
+      expect(component.selectedParks).toEqual(['acad']);
+      expect(campgroundsSpy.getNearest).toHaveBeenLastCalledWith(
+        { lat: 10, lng: 20 }, 50, ['NPS', 'BLM'], 100 * METERS_PER_MILE, ['ME', 'NH'], ['acad'],
+      );
+    });
+
+    it('keeps the saved park selection when saving again after restoring', async () => {
+      TestBed.inject(FinderStateService).save(SAVED);
+      campgroundsSpy.getParkCodes.mockResolvedValue(['acad', 'yell']);
+      campgroundsSpy.getNearest.mockResolvedValue([]);
+
+      await component.ngOnInit();
+
+      expect(TestBed.inject(FinderStateService).snapshot()?.parks).toEqual(['acad']);
+    });
+
+    it('drops saved filter values that are no longer valid options', async () => {
+      TestBed.inject(FinderStateService).save({
+        ...SAVED,
+        agencies: ['BLM', 'XYZ', 'NPS'],
+        states: ['ME', 'ZZ'],
+        regions: ['Northeast', 'Atlantis'],
+        parks: ['acad', 'gone'],
+        radiusMiles: 37,
+      });
+      campgroundsSpy.getParkCodes.mockResolvedValue(['acad', 'yell']);
+      campgroundsSpy.getNearest.mockResolvedValue([]);
+
+      await component.ngOnInit();
+
+      expect(component.selectedAgencies).toEqual(['NPS', 'BLM']);
+      expect(component.selectedStates).toEqual(['ME']);
+      expect(component.selectedRegions).toEqual(['Northeast']);
+      expect(component.selectedParks).toEqual(['acad']);
+      expect(component.radiusMiles).toBe(50);
+    });
+
+    it('uses the default all-parks selection when the saved search had all parks', async () => {
+      TestBed.inject(FinderStateService).save({ ...SAVED, parks: null });
+      campgroundsSpy.getParkCodes.mockResolvedValue(['acad', 'yell']);
+      campgroundsSpy.getNearest.mockResolvedValue([]);
+
+      await component.ngOnInit();
+
+      expect(component.selectedParks).toEqual(['acad', 'yell']);
+    });
   });
 });
