@@ -52,7 +52,11 @@ export class CampgroundMapComponent implements OnChanges, OnDestroy {
   @Input() selectedId: string | null = null;
   @Input() ordered = false;
   @Input() searchLocation: Coordinates | null = null;
+  // Opt-in so only the Finder map offers right-click "Search from here" —
+  // the trip-detail map reuses this component and has no search location.
+  @Input() allowLocationPick = false;
   @Output() viewDetails = new EventEmitter<string>();
+  @Output() locationPick = new EventEmitter<Coordinates>();
 
   private readonly tripsService = inject(TripsService);
   private readonly supabase = inject(SupabaseService);
@@ -93,6 +97,35 @@ export class CampgroundMapComponent implements OnChanges, OnDestroy {
       this.resizeObserver = new ResizeObserver(() => map.invalidateSize());
       this.resizeObserver.observe(map.getContainer());
     }
+    // Leaflet suppresses the browser's own context menu once a contextmenu
+    // listener exists. The popup is a confirm step, not the action itself —
+    // a stray right-click shouldn't throw away the user's search location.
+    if (this.allowLocationPick) {
+      map.on('contextmenu', (event: L.LeafletMouseEvent) => {
+        const popup = L.popup()
+          .setLatLng(event.latlng)
+          .setContent(this.buildLocationPickContent(event.latlng));
+        map.openPopup(popup);
+      });
+    }
+  }
+
+  // Plain DOM for the same reason as buildPopupContent below.
+  private buildLocationPickContent(latlng: L.LatLng): HTMLElement {
+    const container = document.createElement('div');
+    const coords = document.createElement('div');
+    coords.textContent = `${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)}`;
+    container.appendChild(coords);
+
+    const button = document.createElement('button');
+    button.className = 'view-details-button';
+    button.textContent = 'Search from here';
+    button.addEventListener('click', () => {
+      this.map?.closePopup();
+      this.locationPick.emit({ lat: latlng.lat, lng: latlng.lng });
+    });
+    container.appendChild(button);
+    return container;
   }
 
   ngOnDestroy(): void {

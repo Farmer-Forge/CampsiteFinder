@@ -192,6 +192,11 @@ export class FinderComponent implements OnInit {
     return this.loadNearest();
   }
 
+  onMapLocationPick(coords: Coordinates): Promise<void> {
+    this.showLocationForm.set(false);
+    return this.loadNearest(coords);
+  }
+
   onToggleLocationForm(): void {
     this.showLocationForm.update((shown) => !shown);
   }

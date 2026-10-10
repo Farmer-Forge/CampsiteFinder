@@ -331,4 +331,65 @@ describe('CampgroundMapComponent', () => {
     expect(component.mapCenter).toBe(defaultCenter);
     expect(component.mapZoom).toBe(defaultZoom);
   });
+
+  describe('right-click "Search from here"', () => {
+    function mockMap() {
+      return { on: vi.fn(), openPopup: vi.fn(), closePopup: vi.fn() };
+    }
+
+    function rightClick(map: ReturnType<typeof mockMap>, lat: number, lng: number): L.Popup {
+      const [event, handler] = map.on.mock.calls[0];
+      expect(event).toBe('contextmenu');
+      handler({ latlng: L.latLng(lat, lng) });
+      return map.openPopup.mock.calls[0][0] as L.Popup;
+    }
+
+    it('does not listen for right-clicks unless location picking is allowed', () => {
+      const map = mockMap();
+
+      component.onMapReady(map as any);
+
+      expect(map.on).not.toHaveBeenCalled();
+    });
+
+    it('opens a "Search from here" popup at the right-clicked point', () => {
+      const map = mockMap();
+      component.allowLocationPick = true;
+      component.onMapReady(map as any);
+
+      const popup = rightClick(map, 44.123456, -68.987654);
+
+      expect(popup.getLatLng()).toEqual(L.latLng(44.123456, -68.987654));
+      const content = popup.getContent() as HTMLElement;
+      expect(content.textContent).toContain('44.1235, -68.9877');
+      expect(content.querySelector('button')?.textContent).toBe('Search from here');
+    });
+
+    it('emits the picked coordinates and closes the popup when confirmed', () => {
+      const map = mockMap();
+      const picked: unknown[] = [];
+      component.locationPick.subscribe((c: unknown) => picked.push(c));
+      component.allowLocationPick = true;
+      component.onMapReady(map as any);
+
+      const popup = rightClick(map, 44.5, -68.5);
+      (popup.getContent() as HTMLElement).querySelector('button')!.click();
+
+      expect(picked).toEqual([{ lat: 44.5, lng: -68.5 }]);
+      expect(map.closePopup).toHaveBeenCalled();
+    });
+
+    it('does not move the location just from the right-click', () => {
+      const map = mockMap();
+      const picked: unknown[] = [];
+      component.locationPick.subscribe((c: unknown) => picked.push(c));
+      component.allowLocationPick = true;
+      component.onMapReady(map as any);
+
+      rightClick(map, 44.5, -68.5);
+
+      expect(picked).toEqual([]);
+    });
+  });
 });
+

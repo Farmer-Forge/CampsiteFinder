@@ -600,5 +600,30 @@ describe('FinderComponent', () => {
       expect(component.deviceLocationError()).toBeNull();
     });
   });
+
+  it('searches from a point picked on the map', async () => {
+    geolocationSpy.getCurrentPosition.mockResolvedValue({ lat: 44.3, lng: -68.2 });
+    campgroundsSpy.getNearest.mockResolvedValue([]);
+    await component.ngOnInit();
+
+    await component.onMapLocationPick({ lat: 40, lng: -100 });
+
+    expect(component.searchLocation()).toEqual({ lat: 40, lng: -100 });
+    expect(campgroundsSpy.getNearest).toHaveBeenLastCalledWith(
+      { lat: 40, lng: -100 }, 50, component.ALL_AGENCIES, SHOW_ALL_RADIUS_M, undefined, undefined,
+    );
+    expect(TestBed.inject(FinderStateService).snapshot()?.location).toEqual({ lat: 40, lng: -100 });
+  });
+
+  it('enables right-click location picking on its map', async () => {
+    geolocationSpy.getCurrentPosition.mockResolvedValue({ lat: 44.3, lng: -68.2 });
+    campgroundsSpy.getNearest.mockResolvedValue([]);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const map = fixture.debugElement.query((de) => de.name === 'app-campground-map');
+    expect(map.componentInstance.allowLocationPick).toBe(true);
+  });
 });
 

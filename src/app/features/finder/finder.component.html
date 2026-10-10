@@ -81,7 +81,9 @@
         [campgrounds]="campgrounds()"
         [selectedId]="selected()?.id ?? null"
         [searchLocation]="searchLocation()"
+        [allowLocationPick]="true"
         (viewDetails)="onViewDetails($event)"
+        (locationPick)="onMapLocationPick($event)"
       />
     </div>
     <div class="rt-side">
