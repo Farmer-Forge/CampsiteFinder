@@ -2,11 +2,15 @@
   <form class="auth-card" (ngSubmit)="onSubmit()">
     <div class="auth-header"><h1>Sign In</h1></div>
     <div class="auth-body">
+      @if (notice) {
+        <p class="rt-notice">{{ notice }}</p>
+      }
       @if (error()) {
         <p class="rt-error">{{ error() }}</p>
       }
       <input class="rt-input" type="email" placeholder="Email" [(ngModel)]="email" name="email" required />
       <input class="rt-input" type="password" placeholder="Password" [(ngModel)]="password" name="password" required />
+      <a class="auth-forgot" routerLink="/forgot-password">Forgot password?</a>
       <button type="submit" class="rt-btn rt-btn--cherry auth-submit" [disabled]="submitting()">Sign In</button>
       <a class="auth-switch" routerLink="/signup">Need an account? Sign up</a>
     </div>

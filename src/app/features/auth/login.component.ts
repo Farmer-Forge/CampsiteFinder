@@ -1,6 +1,6 @@
 import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { SupabaseService } from '../../core/services/supabase.service';
 
 @Component({
@@ -15,11 +15,19 @@ export class LoginComponent {
   password = '';
   readonly error = signal<string | null>(null);
   readonly submitting = signal(false);
+  // Set by ResetPasswordComponent after a successful reset.
+  readonly notice: string | null;
 
   constructor(
     private readonly supabase: SupabaseService,
     private readonly router: Router,
-  ) {}
+    route: ActivatedRoute,
+  ) {
+    this.notice =
+      route.snapshot.queryParamMap.get('reset') === 'done'
+        ? 'Password updated. Sign in with your new password.'
+        : null;
+  }
 
   async onSubmit(): Promise<void> {
     this.submitting.set(true);

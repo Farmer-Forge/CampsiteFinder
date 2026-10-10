@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { vi } from 'vitest';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute, convertToParamMap } from '@angular/router';
 import { LoginComponent } from './login.component';
 import { SupabaseService } from '../../core/services/supabase.service';
 
@@ -19,8 +19,10 @@ describe('LoginComponent', () => {
   let signOutSpy: ReturnType<typeof vi.fn>;
   let fromSpy: ReturnType<typeof vi.fn>;
   let navigateSpy: ReturnType<typeof vi.fn>;
+  let route: { snapshot: { queryParamMap: ReturnType<typeof convertToParamMap> } };
 
   beforeEach(() => {
+    route = { snapshot: { queryParamMap: convertToParamMap({}) } };
     signInSpy = vi.fn();
     signOutSpy = vi.fn().mockResolvedValue({ error: null });
     fromSpy = vi.fn();
@@ -34,11 +36,31 @@ describe('LoginComponent', () => {
           useValue: { client: { auth: { signInWithPassword: signInSpy, signOut: signOutSpy }, from: fromSpy } },
         },
         { provide: Router, useValue: { navigateByUrl: navigateSpy } },
-        { provide: ActivatedRoute, useValue: {} },
+        { provide: ActivatedRoute, useValue: route },
       ],
     });
 
     component = TestBed.createComponent(LoginComponent).componentInstance;
+  });
+
+  it('links to the forgot-password page', () => {
+    const fixture = TestBed.createComponent(LoginComponent);
+    fixture.detectChanges();
+
+    const link = (fixture.nativeElement as HTMLElement).querySelector('a.auth-forgot');
+    expect(link?.textContent).toContain('Forgot password?');
+  });
+
+  it('confirms a completed password reset arriving from the reset page', () => {
+    route.snapshot.queryParamMap = convertToParamMap({ reset: 'done' });
+
+    const fresh = TestBed.createComponent(LoginComponent).componentInstance;
+
+    expect(fresh.notice).toBe('Password updated. Sign in with your new password.');
+  });
+
+  it('shows no notice on a normal visit', () => {
+    expect(component.notice).toBeNull();
   });
 
   it('navigates home on successful sign-in when not suspended', async () => {

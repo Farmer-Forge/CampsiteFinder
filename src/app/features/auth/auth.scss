@@ -44,6 +44,18 @@
   box-shadow: 3px 3px 0 var(--rt-ink);
 }
 
+.auth-help {
+  margin: 0;
+  font-size: 14px;
+}
+
+.auth-forgot {
+  align-self: flex-end;
+  margin-top: -4px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
 .auth-switch {
   font-size: 14px;
   font-weight: 600;

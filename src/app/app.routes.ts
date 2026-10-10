@@ -21,6 +21,16 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/signup.component').then((m) => m.SignupComponent),
   },
   {
+    path: 'forgot-password',
+    loadComponent: () =>
+      import('./features/auth/forgot-password.component').then((m) => m.ForgotPasswordComponent),
+  },
+  {
+    path: 'reset-password',
+    loadComponent: () =>
+      import('./features/auth/reset-password.component').then((m) => m.ResetPasswordComponent),
+  },
+  {
     path: 'trips',
     loadComponent: () => import('./features/trips/trips-list.component').then((m) => m.TripsListComponent),
     canActivate: [authGuard],
