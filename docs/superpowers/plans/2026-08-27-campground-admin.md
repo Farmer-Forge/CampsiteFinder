@@ -32,12 +32,12 @@
 **Interfaces:**
 - Produces: `public.users.suspended boolean`; `public.campground_attributes` table; SQL functions `public.is_admin(uid uuid)`, `public.get_users_for_admin()`, `public.admin_update_user_role(target_user_id uuid, new_role text)`, `public.admin_set_user_suspended(target_user_id uuid, is_suspended boolean)`. Consumed by Task 2 (Edge Function's `is_admin` check), Task 3 (`AdminUsersService`), Task 4 (`CampgroundAttributesService`), Task 6 (`LoginComponent`'s suspension check).
 
-- [ ] **Step 1: Confirm the next migration number is still free**
+- [x] **Step 1: Confirm the next migration number is still free**
 
 Run: `ls supabase/migrations/`
 Expected: highest existing file is `0007_set_shawnpfarmer_admin.sql` (if later work has landed since this plan was written, name this file the next number up instead of `0008`, and use that number throughout this task).
 
-- [ ] **Step 2: Write the migration**
+- [x] **Step 2: Write the migration**
 
 Create `supabase/migrations/0008_campground_admin.sql`:
 
@@ -131,11 +131,11 @@ grant execute on function public.admin_update_user_role(uuid, text) to authentic
 grant execute on function public.admin_set_user_suspended(uuid, boolean) to authenticated;
 ```
 
-- [ ] **Step 3: Apply the migration**
+- [x] **Step 3: Apply the migration**
 
 Using `mcp__claude_ai_Supabase__apply_migration`, apply the SQL above to project `jpiicvvnipsckkhgjinn` as migration `0008_campground_admin` (adjust the number if Step 1 found a later one already taken).
 
-- [ ] **Step 4: Verify the schema**
+- [x] **Step 4: Verify the schema**
 
 Using `mcp__claude_ai_Supabase__execute_sql` on project `jpiicvvnipsckkhgjinn`:
 
@@ -156,7 +156,7 @@ select public.is_admin(id) from public.users where id = (select id from auth.use
 
 Expected: `true`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add supabase/migrations/0008_campground_admin.sql
@@ -176,7 +176,7 @@ git commit -m "Add suspended column, campground_attributes table, and admin RPCs
 
 **Note:** No unit test file — matches this project's existing `delete-account`/`nps-sync` precedent (no established harness for mocking `Deno.serve`/`createClient` at the HTTP-handler level). Verification is a real deploy + real invocation (Steps 3–5).
 
-- [ ] **Step 1: Write the function**
+- [x] **Step 1: Write the function**
 
 Create `supabase/functions/admin-delete-account/index.ts`:
 
@@ -236,11 +236,11 @@ Deno.serve(async (req) => {
 });
 ```
 
-- [ ] **Step 2: Deploy the function**
+- [x] **Step 2: Deploy the function**
 
 Using `mcp__claude_ai_Supabase__deploy_edge_function`, deploy `admin-delete-account` to project `jpiicvvnipsckkhgjinn`. No manual secret setup needed — `SUPABASE_URL`/`SUPABASE_ANON_KEY`/`SUPABASE_SERVICE_ROLE_KEY` are auto-injected.
 
-- [ ] **Step 3: Sign up two disposable test accounts**
+- [x] **Step 3: Sign up two disposable test accounts**
 
 Using the project's anon key (from `src/environments/environment.ts`) and real inbox aliases:
 
@@ -256,7 +256,7 @@ curl -X POST "https://jpiicvvnipsckkhgjinn.supabase.co/auth/v1/signup" \
 
 Note each response's `access_token` and each user's `id`.
 
-- [ ] **Step 4: Verify a non-admin caller is rejected**
+- [x] **Step 4: Verify a non-admin caller is rejected**
 
 ```bash
 curl -i -X POST "https://jpiicvvnipsckkhgjinn.supabase.co/functions/v1/admin-delete-account" \
@@ -267,7 +267,7 @@ curl -i -X POST "https://jpiicvvnipsckkhgjinn.supabase.co/functions/v1/admin-del
 
 Expected: `403 Forbidden` (neither test account is an admin).
 
-- [ ] **Step 5: Promote the caller to admin, then verify a real deletion**
+- [x] **Step 5: Promote the caller to admin, then verify a real deletion**
 
 Using `mcp__claude_ai_Supabase__execute_sql`:
 
@@ -292,7 +292,7 @@ curl -i -X POST "https://jpiicvvnipsckkhgjinn.supabase.co/functions/v1/admin-del
 
 Expected: `400` with the "Use the self-service delete-account function" message. Clean up afterwards — delete the now-admin `admintest1` account via the self-service `delete-account` function (or `auth.admin.deleteUser` via `execute_sql`-adjacent tooling) so no disposable admin account is left behind.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add supabase/functions/admin-delete-account
@@ -315,7 +315,7 @@ git commit -m "Add admin-delete-account Edge Function"
 - Consumes: `get_users_for_admin`/`admin_update_user_role`/`admin_set_user_suspended` RPCs (Task 1), `admin-delete-account` Edge Function (Task 2).
 - Produces: `interface AdminUser { id, email, displayName, role, suspended, createdAt }`; `AdminUsersService` with `users: Signal<AdminUser[]>`, `loadUsers(): Promise<void>`, `updateRole(userId: string, role: 'user' | 'moderator' | 'admin'): Promise<void>`, `setSuspended(userId: string, suspended: boolean): Promise<void>`, `deleteUser(userId: string): Promise<void>` — consumed by `AdminComponent` (Task 7).
 
-- [ ] **Step 1: Add the model**
+- [x] **Step 1: Add the model**
 
 Create `src/app/core/models/admin-user.model.ts`:
 
@@ -330,11 +330,11 @@ export interface AdminUser {
 }
 ```
 
-- [ ] **Step 2: Remove `AdminUserSummary` from `user.model.ts`**
+- [x] **Step 2: Remove `AdminUserSummary` from `user.model.ts`**
 
 In `src/app/core/models/user.model.ts`, delete the `AdminUserSummary` interface (the last four lines of the file), leaving only `UserProfile`.
 
-- [ ] **Step 3: Write the failing tests**
+- [x] **Step 3: Write the failing tests**
 
 Create `src/app/core/services/admin-users.service.spec.ts`:
 
@@ -473,12 +473,12 @@ describe('AdminUsersService', () => {
 });
 ```
 
-- [ ] **Step 4: Run the tests to verify they fail**
+- [x] **Step 4: Run the tests to verify they fail**
 
 Run: `npx ng test --watch=false`
 Expected: FAIL — `./admin-users.service` does not exist yet.
 
-- [ ] **Step 5: Implement `AdminUsersService`**
+- [x] **Step 5: Implement `AdminUsersService`**
 
 Create `src/app/core/services/admin-users.service.ts`:
 
@@ -537,7 +537,7 @@ function mapRow(row: any): AdminUser {
 }
 ```
 
-- [ ] **Step 6: Delete the superseded `AdminService`**
+- [x] **Step 6: Delete the superseded `AdminService`**
 
 ```bash
 rm src/app/core/services/admin.service.ts src/app/core/services/admin.service.spec.ts
@@ -545,12 +545,12 @@ rm src/app/core/services/admin.service.ts src/app/core/services/admin.service.sp
 
 (`AdminComponent` still imports it until Task 7 rewrites it — expect `AdminComponent`/its spec to fail to compile until then; that's fine, Task 7 fixes it immediately after.)
 
-- [ ] **Step 7: Run the tests to verify the new service passes**
+- [x] **Step 7: Run the tests to verify the new service passes**
 
 Run: `npx ng test --watch=false`
 Expected: `admin-users.service.spec.ts` PASSES. `admin.component.spec.ts` and `admin.component.ts` will fail/error (missing `AdminService`) — expected until Task 7.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add src/app/core/models/admin-user.model.ts src/app/core/models/user.model.ts \
@@ -572,7 +572,7 @@ git commit -m "Add AdminUsersService, remove superseded AdminService"
 - Consumes: `public.campground_attributes` table (Task 1).
 - Produces: `interface CampgroundAttribute { id, campgroundId, type, name, value, createdAt }`; `CampgroundAttributesService` with `attributes: Signal<CampgroundAttribute[]>`, `loadForCampground(campgroundId: string): Promise<void>`, `addAttribute(campgroundId: string, type: string, name: string, value: string | null): Promise<void>`, `updateAttribute(attributeId: string, type: string, name: string, value: string | null): Promise<void>`, `deleteAttribute(attributeId: string): Promise<void>` — consumed by `AdminComponent` (Task 8).
 
-- [ ] **Step 1: Add the model**
+- [x] **Step 1: Add the model**
 
 Create `src/app/core/models/campground-attribute.model.ts`:
 
@@ -587,7 +587,7 @@ export interface CampgroundAttribute {
 }
 ```
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 Create `src/app/core/services/campground-attributes.service.spec.ts`:
 
@@ -736,12 +736,12 @@ describe('CampgroundAttributesService', () => {
 });
 ```
 
-- [ ] **Step 3: Run the tests to verify they fail**
+- [x] **Step 3: Run the tests to verify they fail**
 
 Run: `npx ng test --watch=false`
 Expected: FAIL — `./campground-attributes.service` does not exist yet.
 
-- [ ] **Step 4: Implement `CampgroundAttributesService`**
+- [x] **Step 4: Implement `CampgroundAttributesService`**
 
 Create `src/app/core/services/campground-attributes.service.ts`:
 
@@ -811,12 +811,12 @@ function mapRow(row: any): CampgroundAttribute {
 }
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `npx ng test --watch=false`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/app/core/models/campground-attribute.model.ts \
@@ -836,7 +836,7 @@ git commit -m "Add CampgroundAttributesService"
 **Interfaces:**
 - Produces: `CampgroundsService.searchByName(query: string): Promise<{ id: string; name: string }[]>` — consumed by `AdminComponent`'s campground picker (Task 8). See Global Constraints for why this returns a lighter shape than `Campground[]`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 In `src/app/core/services/campgrounds.service.spec.ts`, change the `beforeEach` to also provide a `from` spy (alongside the existing `rpc` spy), and add these tests at the end of the `describe` block:
 
@@ -886,12 +886,12 @@ And update the top of the file's `beforeEach`/provider wiring to:
   });
 ```
 
-- [ ] **Step 2: Run the tests to verify the new ones fail**
+- [x] **Step 2: Run the tests to verify the new ones fail**
 
 Run: `npx ng test --watch=false`
 Expected: FAIL — `service.searchByName is not a function`.
 
-- [ ] **Step 3: Implement `searchByName`**
+- [x] **Step 3: Implement `searchByName`**
 
 In `src/app/core/services/campgrounds.service.ts`, add this method to `CampgroundsService` (after `getByIds`):
 
@@ -907,12 +907,12 @@ In `src/app/core/services/campgrounds.service.ts`, add this method to `Campgroun
   }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `npx ng test --watch=false`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/app/core/services/campgrounds.service.ts src/app/core/services/campgrounds.service.spec.ts
@@ -930,7 +930,7 @@ git commit -m "Add CampgroundsService.searchByName for the admin campground pick
 **Interfaces:**
 - Consumes: `public.users.suspended` (Task 1).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 In `src/app/features/auth/login.component.spec.ts`, replace the file with:
 
@@ -1013,12 +1013,12 @@ describe('LoginComponent', () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify the suspended-flow test fails**
+- [x] **Step 2: Run the tests to verify the suspended-flow test fails**
 
 Run: `npx ng test --watch=false`
 Expected: FAIL — `component.onSubmit` doesn't yet check `suspended`, and doesn't yet destructure `data` from `signInWithPassword`.
 
-- [ ] **Step 3: Implement the suspension check**
+- [x] **Step 3: Implement the suspension check**
 
 Replace `onSubmit` in `src/app/features/auth/login.component.ts`:
 
@@ -1055,12 +1055,12 @@ Replace `onSubmit` in `src/app/features/auth/login.component.ts`:
   }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `npx ng test --watch=false`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/app/features/auth/login.component.ts src/app/features/auth/login.component.spec.ts
@@ -1080,7 +1080,7 @@ git commit -m "Block sign-in for suspended accounts"
 - Consumes: `AdminUsersService` (Task 3).
 - Produces: `AdminComponent` with a `p-tabs` shell (Users tab fully wired here; an empty Campground Attributes tab placeholder wired in Task 8).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Replace `src/app/features/admin/admin.component.spec.ts`:
 
@@ -1214,12 +1214,12 @@ describe('AdminComponent', () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `npx ng test --watch=false`
 Expected: FAIL — the current `AdminComponent` still depends on the deleted `AdminService` and has none of these methods.
 
-- [ ] **Step 3: Implement the component (Users tab; Campground Attributes tab body added in Task 8)**
+- [x] **Step 3: Implement the component (Users tab; Campground Attributes tab body added in Task 8)**
 
 Replace `src/app/features/admin/admin.component.ts`:
 
@@ -1365,12 +1365,12 @@ Replace `src/app/features/admin/admin.component.html`:
 </p-tabs>
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `npx ng test --watch=false`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/app/features/admin/admin.component.ts src/app/features/admin/admin.component.html \
@@ -1390,7 +1390,7 @@ git commit -m "Rebuild admin page: tabbed shell with full Users tab (role edit, 
 **Interfaces:**
 - Consumes: `CampgroundAttributesService` (Task 4), `CampgroundsService.searchByName` (Task 5).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 In `src/app/features/admin/admin.component.spec.ts`, add these tests inside the existing `describe('AdminComponent', ...)` block (after the last Users-tab test), and update `setup()`'s `CampgroundAttributesService`/`CampgroundsService` providers to return spies you can assert on — replace the two `provide` entries with:
 
@@ -1537,12 +1537,12 @@ Then add these tests:
   });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `npx ng test --watch=false`
 Expected: FAIL — `AdminComponent` has no `onSearchCampgrounds`/`onSelectCampground`/`onAddAttribute`/etc. yet.
 
-- [ ] **Step 3: Implement the Campground Attributes tab**
+- [x] **Step 3: Implement the Campground Attributes tab**
 
 In `src/app/features/admin/admin.component.ts`, add the new imports:
 
@@ -1718,12 +1718,12 @@ Replace the placeholder second `<p-tabpanel>` in `src/app/features/admin/admin.c
     </p-tabpanel>
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `npx ng test --watch=false`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/app/features/admin/admin.component.ts src/app/features/admin/admin.component.html \
@@ -1737,7 +1737,7 @@ git commit -m "Add Campground Attributes tab: picker plus add/edit/delete"
 
 **Files:** none (verification only).
 
-- [ ] **Step 1: Run the full test suite and build**
+- [x] **Step 1: Run the full test suite and build**
 
 ```bash
 npx ng test --watch=false
@@ -1746,7 +1746,7 @@ npx ng build
 
 Expected: both PASS with no errors.
 
-- [ ] **Step 2: Manual end-to-end pass**
+- [x] **Step 2: Manual end-to-end pass**
 
 Run `npx ng serve`. Note: `shawnpfarmer@gmail.com` is already the bootstrap admin (migration `0007`) — its self-lockout guards mean it can't change/suspend/delete *itself*, so use a second disposable account (e.g. `shawnpfarmer+admintest3@gmail.com`) as the target of the actions below.
 
@@ -1766,6 +1766,6 @@ Run `npx ng serve`. Note: `shawnpfarmer@gmail.com` is already the bootstrap admi
 14. Sign out and confirm navigating directly to `/admin` redirects to `/login`; sign in as a non-admin user and confirm navigating to `/admin` redirects to `/`.
 15. Check the browser console for errors at every step above.
 
-- [ ] **Step 3: Report results**
+- [x] **Step 3: Report results**
 
 Confirm all steps above pass with no console errors before considering this plan complete. If any step fails, treat it as a bug against the specific task that introduced it, not a new task.

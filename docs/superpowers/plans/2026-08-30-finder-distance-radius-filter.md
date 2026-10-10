@@ -45,12 +45,12 @@
 - Consumes: nothing new (extends the existing `nearest_campgrounds` from migration `0010_ridb_agency_filter_rpcs.sql`).
 - Produces: `nearest_campgrounds(user_lat double precision, user_lng double precision, result_limit int default 50, agency_filter text[] default null, max_distance_m double precision default null)`, same return columns as today (unchanged). Consumed by Task 2 (`CampgroundsService`).
 
-- [ ] **Step 1: Confirm the next migration number is still free**
+- [x] **Step 1: Confirm the next migration number is still free**
 
 Run: `ls supabase/migrations/`
 Expected: highest existing file is `0010_ridb_agency_filter_rpcs.sql` — `0011` is free. If not, renumber this task's file to the next free number.
 
-- [ ] **Step 2: Write the migration**
+- [x] **Step 2: Write the migration**
 
 Create `supabase/migrations/0011_nearest_campgrounds_radius.sql`:
 
@@ -103,11 +103,11 @@ $$;
 grant execute on function public.nearest_campgrounds(double precision, double precision, int, text[], double precision) to anon, authenticated;
 ```
 
-- [ ] **Step 3: Apply the migration**
+- [x] **Step 3: Apply the migration**
 
 Using `mcp__claude_ai_Supabase__apply_migration`, apply the SQL above to project `jpiicvvnipsckkhgjinn` as migration `0011_nearest_campgrounds_radius` (adjust the number if Step 1 found a later one already taken).
 
-- [ ] **Step 4: Verify the RPC change — default behavior is unchanged**
+- [x] **Step 4: Verify the RPC change — default behavior is unchanged**
 
 Using `mcp__claude_ai_Supabase__execute_sql` against project `jpiicvvnipsckkhgjinn`, run:
 
@@ -117,7 +117,7 @@ select count(*) from nearest_campgrounds(44.3, -68.2, 50, null, null);
 
 Expected: same row count as calling the function without `max_distance_m` did before this migration (up to 50 rows, whatever's nearest to that coordinate) — confirms `max_distance_m => null` doesn't change default behavior.
 
-- [ ] **Step 5: Verify the radius filter actually bounds results**
+- [x] **Step 5: Verify the radius filter actually bounds results**
 
 Using `mcp__claude_ai_Supabase__execute_sql` against project `jpiicvvnipsckkhgjinn`, run:
 
@@ -128,7 +128,7 @@ select count(*) from nearest_campgrounds(44.9, -93.2, 50, null, null);
 
 Expected: the first query's `max(distance_m)` is `<= 50000` (50km radius) and its row count is *not* capped at 50 if more than 50 campgrounds exist within 50km of that Minneapolis-area coordinate (compare against the second query's count, which stays capped at 50). If the first query happens to return fewer than 50 rows regardless, that's fine too — the test that matters is `max(distance_m) <= 50000`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add supabase/migrations/0011_nearest_campgrounds_radius.sql
@@ -147,7 +147,7 @@ git commit -m "Add max_distance_m radius param to nearest_campgrounds"
 - Consumes: `nearest_campgrounds`'s new `max_distance_m` param (Task 1).
 - Produces: `CampgroundsService.getNearest(coords: Coordinates, limit?: number, agencies?: string[], maxDistanceMeters?: number): Promise<Campground[]>`. Consumed by Task 3 (`FinderComponent`).
 
-- [ ] **Step 1: Update the failing tests first**
+- [x] **Step 1: Update the failing tests first**
 
 Edit `src/app/core/services/campgrounds.service.spec.ts` — the two existing tests that assert `getNearest`'s RPC call args need `max_distance_m: null` added to their expected object (since the RPC now always receives that key). Update `'maps RPC rows to Campground objects'`:
 
@@ -203,12 +203,12 @@ Add a new test immediately after it:
 
 Leave every other test in the file (the `getByIds` tests, `searchByName` tests, error-path tests) unchanged — `get_campgrounds_by_ids` is not touched by this plan.
 
-- [ ] **Step 2: Run tests to verify the new/changed ones fail**
+- [x] **Step 2: Run tests to verify the new/changed ones fail**
 
 Run: `npx ng test --watch=false`
 Expected: FAIL on the three tests just added/edited — `getNearest` doesn't send `max_distance_m` yet.
 
-- [ ] **Step 3: Update the implementation**
+- [x] **Step 3: Update the implementation**
 
 Edit `src/app/core/services/campgrounds.service.ts` — change only the `getNearest` method (leave `getByIds` and `searchByName` untouched):
 
@@ -248,12 +248,12 @@ Edit `src/app/core/services/campgrounds.service.ts` — change only the `getNear
   }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `npx ng test --watch=false`
 Expected: PASS — all `CampgroundsService` tests green.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/app/core/services/campgrounds.service.ts src/app/core/services/campgrounds.service.spec.ts
@@ -273,7 +273,7 @@ git commit -m "Forward a max-distance filter from CampgroundsService.getNearest"
 - Consumes: `CampgroundsService.getNearest(coords, limit?, agencies?, maxDistanceMeters?)` (Task 2).
 - Produces: `FinderComponent.RADIUS_OPTIONS: { label: string; value: number | null }[]`, `FinderComponent.selectedRadiusMiles: number | null`, `FinderComponent.onFilterChange(): Promise<void>` (renamed from `onAgencyFilterChange`).
 
-- [ ] **Step 1: Write the failing tests first**
+- [x] **Step 1: Write the failing tests first**
 
 Edit `src/app/features/finder/finder.component.spec.ts` — rename every existing call site of `onAgencyFilterChange` to `onFilterChange` (there are two: the "reloads with the selected agencies..." test and the "does not reload on filter change..." test):
 
@@ -319,12 +319,12 @@ Add two new tests immediately after them:
   });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `npx ng test --watch=false`
 Expected: FAIL — `onFilterChange`/`selectedRadiusMiles`/`RADIUS_OPTIONS` don't exist yet (the renamed-call tests fail because `onFilterChange` isn't defined).
 
-- [ ] **Step 3: Update the component**
+- [x] **Step 3: Update the component**
 
 Edit `src/app/features/finder/finder.component.ts`:
 
@@ -430,7 +430,7 @@ export class FinderComponent implements OnInit {
 }
 ```
 
-- [ ] **Step 4: Add the radius control to the template**
+- [x] **Step 4: Add the radius control to the template**
 
 Edit `src/app/features/finder/finder.component.html` — add the `p-select` inside the existing `.agency-filter` div, and update the multiselect's `(onChange)` binding to call the renamed method:
 
@@ -483,12 +483,12 @@ Edit `src/app/features/finder/finder.component.html` — add the `p-select` insi
 </div>
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `npx ng test --watch=false`
 Expected: PASS — all `FinderComponent` tests green, including the two new radius tests.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/app/features/finder/finder.component.ts src/app/features/finder/finder.component.html src/app/features/finder/finder.component.spec.ts
@@ -501,7 +501,7 @@ git commit -m "Add distance radius filter to the Finder view"
 
 **Files:** none (verification only)
 
-- [ ] **Step 1: Run the full test suite and build**
+- [x] **Step 1: Run the full test suite and build**
 
 ```bash
 npx ng test --watch=false
@@ -510,7 +510,7 @@ npx ng build
 
 Expected: all PASS, build succeeds with no new errors (the pre-existing bundle-size and leaflet-CJS warnings are unrelated to this plan and expected to remain).
 
-- [ ] **Step 2: Manual end-to-end pass in the browser**
+- [x] **Step 2: Manual end-to-end pass in the browser**
 
 Run `npx ng serve`, open the Finder view.
 
@@ -521,6 +521,6 @@ Run `npx ng serve`, open the Finder view.
 5. Combine an agency filter (e.g. "USACE" only) with a radius (e.g. "250 mi") — confirm both constraints apply together.
 6. Check the browser console for errors at every step above.
 
-- [ ] **Step 3: Report results**
+- [x] **Step 3: Report results**
 
 Confirm all steps above pass with no console errors before considering this plan complete. If any step fails, treat it as a bug against the specific task that introduced it, not a new task.

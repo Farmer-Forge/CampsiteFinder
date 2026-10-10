@@ -32,12 +32,12 @@
 **Interfaces:**
 - Produces: `favorites.note` column (nullable text); tables `trips` (`id, user_id, name, created_at`), `trip_stops` (`id, trip_id, campground_id, position`), both RLS-protected.
 
-- [ ] **Step 1: Confirm the next migration number is still free**
+- [x] **Step 1: Confirm the next migration number is still free**
 
 Run: `ls supabase/migrations/`
 Expected: highest existing file is `0002_lock_down_handle_new_user.sql` (or later, if other work has landed since this plan was written — if so, name this file the next number up instead of `0003`, and use that number throughout this task).
 
-- [ ] **Step 2: Write the migration**
+- [x] **Step 2: Write the migration**
 
 Create `supabase/migrations/0003_favorite_notes_and_trips.sql`:
 
@@ -73,11 +73,11 @@ create policy "users manage own trip stops" on trip_stops
 create index trip_stops_trip_id_idx on trip_stops (trip_id);
 ```
 
-- [ ] **Step 3: Apply the migration**
+- [x] **Step 3: Apply the migration**
 
 Using the `mcp__claude_ai_Supabase__apply_migration` tool, apply the SQL above to project `jpiicvvnipsckkhgjinn` as migration `0003_favorite_notes_and_trips` (adjust the number if Step 1 found a later one already taken).
 
-- [ ] **Step 4: Verify the schema**
+- [x] **Step 4: Verify the schema**
 
 Using `mcp__claude_ai_Supabase__execute_sql` on project `jpiicvvnipsckkhgjinn`:
 
@@ -88,7 +88,7 @@ select tablename, rowsecurity from pg_tables where tablename in ('trips', 'trip_
 
 Expected: first query returns one row (`note`); second returns both tables with `rowsecurity = true`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add supabase/migrations/0003_favorite_notes_and_trips.sql
@@ -107,7 +107,7 @@ git commit -m "Add favorites.note column and trips/trip_stops tables"
 - Consumes: `favorites.note` column (Task 1).
 - Produces: `FavoritesService.favoriteNotes: Signal<Map<string, string | null>>`, `FavoritesService.updateNote(campgroundId: string, note: string): Promise<void>` — consumed by `CampgroundTableComponent`'s notes column wiring (Task 6) and directly by the Favorites page (Task 6).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Replace `src/app/core/services/favorites.service.spec.ts` with:
 
@@ -190,12 +190,12 @@ describe('FavoritesService', () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify the new ones fail**
+- [x] **Step 2: Run the tests to verify the new ones fail**
 
 Run: `npx ng test --watch=false`
 Expected: FAIL — `favoriteNotes`/`updateNote` do not exist yet on `FavoritesService`.
 
-- [ ] **Step 3: Implement the service changes**
+- [x] **Step 3: Implement the service changes**
 
 Replace `src/app/core/services/favorites.service.ts` with:
 
@@ -272,12 +272,12 @@ export class FavoritesService {
 }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `npx ng test --watch=false`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/app/core/services/favorites.service.ts src/app/core/services/favorites.service.spec.ts
@@ -299,7 +299,7 @@ git commit -m "Add favorite note support to FavoritesService"
 
 **Note:** `removeStop`/`reorderStops` take `trip_stops.id` (`stopId`), not `campgroundId` — a campground may legitimately appear more than once in the same trip (see spec's Out of Scope), so `campground_id` alone can't identify a specific stop.
 
-- [ ] **Step 1: Add the models**
+- [x] **Step 1: Add the models**
 
 Create `src/app/core/models/trip.model.ts`:
 
@@ -318,7 +318,7 @@ export interface TripStop {
 }
 ```
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 Create `src/app/core/services/trips.service.spec.ts`:
 
@@ -499,12 +499,12 @@ describe('TripsService', () => {
 });
 ```
 
-- [ ] **Step 3: Run the tests to verify they fail**
+- [x] **Step 3: Run the tests to verify they fail**
 
 Run: `npx ng test --watch=false`
 Expected: FAIL — `TripsService` does not exist yet.
 
-- [ ] **Step 4: Implement the service**
+- [x] **Step 4: Implement the service**
 
 Create `src/app/core/services/trips.service.ts`:
 
@@ -647,12 +647,12 @@ export class TripsService {
 }
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `npx ng test --watch=false`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/app/core/models/trip.model.ts src/app/core/services/trips.service.ts src/app/core/services/trips.service.spec.ts
@@ -672,7 +672,7 @@ git commit -m "Add TripsService wrapping trips/trip_stops CRUD"
 
 This mirrors the existing `showDistance` input exactly: additive, defaults to `false`/off, so `FinderComponent`'s usage (which never sets `showNotes`) is completely unaffected.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Replace `src/app/features/finder/campground-table/campground-table.component.spec.ts` with:
 
@@ -754,12 +754,12 @@ describe('CampgroundTableComponent', () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify the new ones fail**
+- [x] **Step 2: Run the tests to verify the new ones fail**
 
 Run: `npx ng test --watch=false`
 Expected: FAIL — `showNotes`/`notes`/`noteDrafts`/`onNoteBlur`/`noteChange` do not exist yet.
 
-- [ ] **Step 3: Implement the component changes**
+- [x] **Step 3: Implement the component changes**
 
 Replace `src/app/features/finder/campground-table/campground-table.component.ts` with:
 
@@ -852,12 +852,12 @@ export class CampgroundTableComponent implements OnChanges {
 }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `npx ng test --watch=false`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/app/features/finder/campground-table/campground-table.component.ts src/app/features/finder/campground-table/campground-table.component.spec.ts
@@ -878,7 +878,7 @@ git commit -m "Add opt-in notes column to CampgroundTableComponent"
 
 **Important:** the numbered-marker style must go in the **global** `src/styles.scss`, not this component's own scoped stylesheet. Leaflet inserts marker DOM nodes directly (outside Angular's template compiler), so Angular's view-encapsulation-scoped CSS never matches them — a rule added to `campground-map.component.scss` would silently do nothing (the same category of gap as an earlier task's `.finder-layout` cosmetic issue). Do not add anything to `campground-map.component.scss` for this.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Replace `src/app/features/finder/campground-map/campground-map.component.spec.ts` with:
 
@@ -937,12 +937,12 @@ describe('CampgroundMapComponent', () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify the new ones fail**
+- [x] **Step 2: Run the tests to verify the new ones fail**
 
 Run: `npx ng test --watch=false`
 Expected: FAIL — `ordered` does not exist yet.
 
-- [ ] **Step 3: Implement the component change**
+- [x] **Step 3: Implement the component change**
 
 Replace `src/app/features/finder/campground-map/campground-map.component.ts` with:
 
@@ -1038,7 +1038,7 @@ export class CampgroundMapComponent implements OnChanges {
 }
 ```
 
-- [ ] **Step 4: Add the global numbered-marker style**
+- [x] **Step 4: Add the global numbered-marker style**
 
 Append to `src/styles.scss`:
 
@@ -1057,12 +1057,12 @@ Append to `src/styles.scss`:
 }
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `npx ng test --watch=false`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/app/features/finder/campground-map/campground-map.component.ts src/app/features/finder/campground-map/campground-map.component.spec.ts src/styles.scss
@@ -1081,7 +1081,7 @@ git commit -m "Add ordered/numbered-route mode to CampgroundMapComponent"
 **Interfaces:**
 - Consumes: `FavoritesService.favoriteNotes`/`updateNote` (Task 2), `CampgroundTableComponent`'s `showNotes`/`notes`/`noteChange` (Task 4).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Replace `src/app/features/favorites/favorites.component.spec.ts` with:
 
@@ -1155,12 +1155,12 @@ describe('FavoritesComponent', () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify the new one fails**
+- [x] **Step 2: Run the tests to verify the new one fails**
 
 Run: `npx ng test --watch=false`
 Expected: FAIL — `onNoteChange` does not exist yet.
 
-- [ ] **Step 3: Implement the component changes**
+- [x] **Step 3: Implement the component changes**
 
 Replace `src/app/features/favorites/favorites.component.ts` with:
 
@@ -1228,12 +1228,12 @@ Replace `src/app/features/favorites/favorites.component.html` with:
 
 Note: `favorites` changed from `private readonly` to plain `readonly` — the template now reads `favorites.favoriteNotes()` directly, so it must be accessible from the template (same pattern already used by `FavoriteToggleComponent`).
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `npx ng test --watch=false`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/app/features/favorites/favorites.component.ts src/app/features/favorites/favorites.component.html src/app/features/favorites/favorites.component.spec.ts
@@ -1255,7 +1255,7 @@ git commit -m "Wire inline note editing into the Favorites page"
 
 This is the dedicated trip-builder panel (design Approach A): a plain checklist next to — not a mode of — the existing map-synced table, so `CampgroundTableComponent`'s existing single-row selection behavior is untouched.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Replace `src/app/features/favorites/favorites.component.spec.ts` with:
 
@@ -1383,12 +1383,12 @@ describe('FavoritesComponent', () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify the new ones fail**
+- [x] **Step 2: Run the tests to verify the new ones fail**
 
 Run: `npx ng test --watch=false`
 Expected: FAIL — `canSaveTrip`/`toggleSelectedForTrip`/`saveTrip` do not exist yet.
 
-- [ ] **Step 3: Implement the component changes**
+- [x] **Step 3: Implement the component changes**
 
 Replace `src/app/features/favorites/favorites.component.ts` with:
 
@@ -1518,12 +1518,12 @@ Replace `src/app/features/favorites/favorites.component.html` with:
 }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `npx ng test --watch=false`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/app/features/favorites/favorites.component.ts src/app/features/favorites/favorites.component.html src/app/features/favorites/favorites.component.spec.ts
@@ -1545,7 +1545,7 @@ git commit -m "Add 'Plan a trip' panel to the Favorites page"
 - Consumes: `TripsService.trips`/`loadTrips`/`deleteTrip` (Task 3).
 - Produces: route `'trips'` → `TripsListComponent` (guarded).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `src/app/features/trips/trips-list.component.spec.ts`:
 
@@ -1603,12 +1603,12 @@ describe('TripsListComponent', () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `npx ng test --watch=false`
 Expected: FAIL — `TripsListComponent` does not exist yet.
 
-- [ ] **Step 3: Implement the component**
+- [x] **Step 3: Implement the component**
 
 Create `src/app/features/trips/trips-list.component.html`:
 
@@ -1669,7 +1669,7 @@ export class TripsListComponent implements OnInit {
 }
 ```
 
-- [ ] **Step 4: Wire routing and navigation**
+- [x] **Step 4: Wire routing and navigation**
 
 Update `src/app/app.routes.ts` — read the current file first (it has four lazy routes plus an `authGuard` import), then add a fifth route object in the same style:
 
@@ -1697,7 +1697,7 @@ Update `src/app/app.html` — add a "Trips" link between "Favorites" and the sig
 <router-outlet />
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `npx ng test --watch=false`
 Expected: PASS.
@@ -1705,7 +1705,7 @@ Expected: PASS.
 Also run: `npx ng build`
 Expected: clean build, no new bundle-budget warnings (this route is lazy, same as the others).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/app/features/trips/trips-list.component.ts src/app/features/trips/trips-list.component.html src/app/features/trips/trips-list.component.spec.ts src/app/app.routes.ts src/app/app.html
@@ -1728,7 +1728,7 @@ git commit -m "Add Trips list view and nav link"
 
 **PrimeNG note (verified against this installed version, not assumed):** row reordering uses the `[pReorderableRow]` directive on each `<tr>` (bound to that row's index) plus a `(onRowReorder)` output on `p-table` — both confirmed present in `node_modules/primeng/types/primeng-table.d.ts`. There is no `reorderableRows` boolean input in this version; tagging rows with `[pReorderableRow]` is what enables it. The emitted `TableRowReorderEvent` (`{ dragIndex, dropIndex }`, confirmed via `node_modules/primeng/types/primeng-types-table.d.ts`) is imported from `'primeng/types/table'`, not `'primeng/table'` — the latter does not re-export it. Because this `value` input is a signal (one-way from the parent), do not assume PrimeNG mutates the bound array for you: `onRowReorder` below explicitly recomputes the new order from the event's indices and writes it back to the component's own `stops` signal.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `src/app/features/trips/trip-detail.component.spec.ts`:
 
@@ -1890,12 +1890,12 @@ describe('TripDetailComponent', () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `npx ng test --watch=false`
 Expected: FAIL — `TripDetailComponent` does not exist yet.
 
-- [ ] **Step 3: Implement the component**
+- [x] **Step 3: Implement the component**
 
 Create `src/app/features/trips/trip-detail.component.html`:
 
@@ -2071,7 +2071,7 @@ export class TripDetailComponent implements OnInit {
 }
 ```
 
-- [ ] **Step 4: Wire the route**
+- [x] **Step 4: Wire the route**
 
 Update `src/app/app.routes.ts` — add, alongside the `trips` route added in Task 8:
 
@@ -2083,7 +2083,7 @@ Update `src/app/app.routes.ts` — add, alongside the `trips` route added in Tas
 },
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `npx ng test --watch=false`
 Expected: PASS.
@@ -2091,7 +2091,7 @@ Expected: PASS.
 Also run: `npx ng build`
 Expected: clean build, no new bundle-budget warnings.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/app/features/trips/trip-detail.component.ts src/app/features/trips/trip-detail.component.html src/app/features/trips/trip-detail.component.spec.ts src/app/app.routes.ts

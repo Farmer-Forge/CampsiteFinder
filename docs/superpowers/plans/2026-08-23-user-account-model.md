@@ -32,12 +32,12 @@
 **Interfaces:**
 - Produces: `public.users` table (`id`, `display_name`, `theme`, `role`), replacing `public.profiles`. Consumed by Task 2 (Edge Function) and Task 3 (`UserService`).
 
-- [ ] **Step 1: Confirm the next migration number is still free**
+- [x] **Step 1: Confirm the next migration number is still free**
 
 Run: `ls supabase/migrations/`
 Expected: highest existing file is `0003_favorite_notes_and_trips.sql` (or later, if other work has landed since this plan was written — if so, name this file the next number up instead of `0004`, and use that number throughout this task).
 
-- [ ] **Step 2: Write the migration**
+- [x] **Step 2: Write the migration**
 
 Create `supabase/migrations/0004_rename_profiles_to_users.sql`:
 
@@ -49,11 +49,11 @@ alter table public.users
   add column role text not null default 'user' check (role in ('user', 'moderator', 'admin'));
 ```
 
-- [ ] **Step 3: Apply the migration**
+- [x] **Step 3: Apply the migration**
 
 Using the `mcp__claude_ai_Supabase__apply_migration` tool, apply the SQL above to project `jpiicvvnipsckkhgjinn` as migration `0004_rename_profiles_to_users` (adjust the number if Step 1 found a later one already taken).
 
-- [ ] **Step 4: Verify the schema**
+- [x] **Step 4: Verify the schema**
 
 Using `mcp__claude_ai_Supabase__execute_sql` on project `jpiicvvnipsckkhgjinn`:
 
@@ -65,7 +65,7 @@ select policyname, tablename from pg_policies where tablename = 'users';
 
 Expected: first query returns only `users` (not `profiles`); second returns `id, display_name, theme, role` with `role` having `not null`/default `'user'::text`; third returns the three pre-existing policies (`anyone can read profiles`, `users can insert own profile`, `users can update own profile`) now attached to `users` — their names are unchanged by the table rename, which is expected (renaming policies is cosmetic and out of scope, per the spec).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add supabase/migrations/0004_rename_profiles_to_users.sql
@@ -85,7 +85,7 @@ git commit -m "Rename profiles to users, add theme and role columns"
 
 **Note:** this function has no unit test file, matching this project's existing `nps-sync` Edge Function — that function's thin `Deno.serve` HTTP handler isn't unit tested either (only its pure `transform.ts` helper is); there's no established harness in this codebase for mocking `Deno.serve`/`createClient` at the HTTP-handler level, and inventing one for a five-line handler isn't worth it. Verification here is a real deploy + real invocation (Steps 3–4), same as `nps-sync`'s Task 3.
 
-- [ ] **Step 1: Write the function**
+- [x] **Step 1: Write the function**
 
 Create `supabase/functions/delete-account/index.ts`:
 
@@ -126,11 +126,11 @@ Deno.serve(async (req) => {
 });
 ```
 
-- [ ] **Step 2: Deploy the function**
+- [x] **Step 2: Deploy the function**
 
 Using `mcp__claude_ai_Supabase__deploy_edge_function`, deploy `delete-account` to project `jpiicvvnipsckkhgjinn`. Unlike `nps-sync`'s `NPS_API_KEY`, no manual secret setup is needed here — `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` are auto-injected into every Edge Function by Supabase.
 
-- [ ] **Step 3: Sign up a disposable test account and get its access token**
+- [x] **Step 3: Sign up a disposable test account and get its access token**
 
 Using the project's anon key (from `src/environments/environment.ts`) and a real inbox alias (see Global Constraints — do not use `test@test.com`):
 
@@ -143,7 +143,7 @@ curl -X POST "https://jpiicvvnipsckkhgjinn.supabase.co/auth/v1/signup" \
 
 Note the `access_token` in the response (if email confirmation is on for this project, sign in instead with `/auth/v1/token?grant_type=password` after confirming — check the project's Auth settings if the signup response has no session).
 
-- [ ] **Step 4: Invoke the function and verify the account is gone**
+- [x] **Step 4: Invoke the function and verify the account is gone**
 
 ```bash
 curl -i -X POST "https://jpiicvvnipsckkhgjinn.supabase.co/functions/v1/delete-account" \
@@ -159,7 +159,7 @@ select count(*) from public.users where display_name = 'Delete Me';
 
 Expected: `0`. (The `auth.users` row is gone too — `public.users` cascades from it — but `auth.users` isn't directly queryable via `execute_sql`; the zero-row count on `public.users` confirms the cascade fired.)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add supabase/functions/delete-account
@@ -179,7 +179,7 @@ git commit -m "Add delete-account Edge Function"
 - Consumes: `public.users` table (Task 1), `delete-account` Edge Function (Task 2), `SupabaseService` (existing).
 - Produces: `interface UserProfile { id, displayName, theme, role }`; `UserService` with `profile: Signal<UserProfile | null>`, `loadProfile(): Promise<void>`, `updateDisplayName(displayName: string): Promise<void>`, `updatePassword(password: string): Promise<void>`, `updateTheme(theme: 'light' | 'dark'): Promise<void>`, `deleteAccount(): Promise<void>` — all consumed by `AccountComponent` (Task 4).
 
-- [ ] **Step 1: Add the model**
+- [x] **Step 1: Add the model**
 
 Create `src/app/core/models/user.model.ts`:
 
@@ -192,7 +192,7 @@ export interface UserProfile {
 }
 ```
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 Create `src/app/core/services/user.service.spec.ts`:
 
@@ -306,12 +306,12 @@ describe('UserService', () => {
 });
 ```
 
-- [ ] **Step 3: Run the tests to verify they fail**
+- [x] **Step 3: Run the tests to verify they fail**
 
 Run: `npx ng test --watch=false`
 Expected: FAIL — `./user.service` does not exist yet.
 
-- [ ] **Step 4: Implement `UserService`**
+- [x] **Step 4: Implement `UserService`**
 
 Create `src/app/core/services/user.service.ts`:
 
@@ -394,12 +394,12 @@ export class UserService {
 }
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `npx ng test --watch=false`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/app/core/models/user.model.ts src/app/core/services/user.service.ts src/app/core/services/user.service.spec.ts
@@ -419,7 +419,7 @@ git commit -m "Add UserService for account profile, password, theme, and deletio
 - Consumes: `UserService` (Task 3).
 - Produces: `AccountComponent` — routed in Task 5.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `src/app/features/account/account.component.spec.ts`:
 
@@ -532,12 +532,12 @@ describe('AccountComponent', () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `npx ng test --watch=false`
 Expected: FAIL — `./account.component` does not exist yet.
 
-- [ ] **Step 3: Implement the component**
+- [x] **Step 3: Implement the component**
 
 Create `src/app/features/account/account.component.ts`:
 
@@ -720,12 +720,12 @@ Create `src/app/features/account/account.component.html`:
 </div>
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `npx ng test --watch=false`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/app/features/account
@@ -743,7 +743,7 @@ git commit -m "Add Account page: display name, password, theme, delete account"
 **Interfaces:**
 - Consumes: `AccountComponent` (Task 4), `authGuard` (existing).
 
-- [ ] **Step 1: Add the guarded route**
+- [x] **Step 1: Add the guarded route**
 
 In `src/app/app.routes.ts`, add (alongside the existing `favorites`/`trips` guarded routes):
 
@@ -755,7 +755,7 @@ In `src/app/app.routes.ts`, add (alongside the existing `favorites`/`trips` guar
   },
 ```
 
-- [ ] **Step 2: Add the nav link**
+- [x] **Step 2: Add the nav link**
 
 In `src/app/app.html`, add an "Account" link next to "Sign out," inside the existing authenticated branch:
 
@@ -774,12 +774,12 @@ In `src/app/app.html`, add an "Account" link next to "Sign out," inside the exis
 <router-outlet />
 ```
 
-- [ ] **Step 3: Run the full test suite**
+- [x] **Step 3: Run the full test suite**
 
 Run: `npx ng test --watch=false`
 Expected: PASS (no existing test references the nav's exact link count/text, so this is a regression check, not a new assertion).
 
-- [ ] **Step 4: Verify in a real browser**
+- [x] **Step 4: Verify in a real browser**
 
 Run `npx ng serve`, then in a browser:
 
@@ -792,7 +792,7 @@ Run `npx ng serve`, then in a browser:
 7. Using a throwaway test account (see Global Constraints), click "Delete Account," confirm the two-step inline confirmation appears, cancel it once to confirm Cancel works, then confirm for real — confirm you're signed out and redirected, and that signing back in with that account's credentials fails.
 8. Check the browser console for errors at each step above.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/app/app.routes.ts src/app/app.html

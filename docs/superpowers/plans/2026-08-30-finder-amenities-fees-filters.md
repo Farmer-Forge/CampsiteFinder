@@ -56,12 +56,12 @@ This plan assumes `docs/superpowers/plans/2026-08-30-finder-distance-radius-filt
 **Interfaces:**
 - Produces: `public.campgrounds.has_showers boolean`, `has_potable_water boolean`, `has_dump_station boolean`, `has_toilets boolean`, `min_fee_cents integer` — all nullable, no default. Consumed by Task 2 (RPCs) and Task 3 (`nps-sync` writes them).
 
-- [ ] **Step 1: Confirm the next migration number is still free**
+- [x] **Step 1: Confirm the next migration number is still free**
 
 Run: `ls supabase/migrations/`
 Expected: highest existing file is `0011_nearest_campgrounds_radius.sql` (from the prerequisite radius plan) — `0012` is free. If not, renumber this task's file (and Task 2's) to the next two free numbers.
 
-- [ ] **Step 2: Write the migration**
+- [x] **Step 2: Write the migration**
 
 Create `supabase/migrations/0012_campground_amenity_fee_columns.sql`:
 
@@ -74,11 +74,11 @@ alter table public.campgrounds
   add column min_fee_cents integer;
 ```
 
-- [ ] **Step 3: Apply the migration**
+- [x] **Step 3: Apply the migration**
 
 Using `mcp__claude_ai_Supabase__apply_migration`, apply the SQL above to project `jpiicvvnipsckkhgjinn` as migration `0012_campground_amenity_fee_columns` (adjust the number if Step 1 found a later one already taken).
 
-- [ ] **Step 4: Verify the schema change**
+- [x] **Step 4: Verify the schema change**
 
 Using `mcp__claude_ai_Supabase__execute_sql` against project `jpiicvvnipsckkhgjinn`, run:
 
@@ -92,7 +92,7 @@ order by column_name;
 
 Expected: all five columns present, `is_nullable = 'YES'`, and every existing row has `null` in each (no default was set, so this is automatic — no need for a separate check, but you can confirm with `select count(*) from public.campgrounds where has_showers is not null;` → expect `0`).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add supabase/migrations/0012_campground_amenity_fee_columns.sql
@@ -110,7 +110,7 @@ git commit -m "Add amenity/fee columns to campgrounds"
 - Consumes: the five columns from Task 1; `nearest_campgrounds`'s post-radius-plan signature (`double precision, double precision, int, text[], double precision`) and `get_campgrounds_by_ids`'s current signature (`text[], text[]`) — see this plan's Prerequisite section if these don't match what's actually deployed.
 - Produces: `nearest_campgrounds(user_lat, user_lng, result_limit default 50, agency_filter default null, max_distance_m default null, require_showers boolean default null, require_potable_water boolean default null, require_dump_station boolean default null, require_toilets boolean default null, max_fee_cents integer default null)` and `get_campgrounds_by_ids(campground_ids text[], agency_filter text[] default null, require_showers boolean default null, require_potable_water boolean default null, require_dump_station boolean default null, require_toilets boolean default null, max_fee_cents integer default null)`. Returned columns are unchanged from each function's current shape (per this plan's filter-only decision — the five new columns are not added to the `returns table` list). Consumed by Task 4 (`CampgroundsService`).
 
-- [ ] **Step 1: Write the migration**
+- [x] **Step 1: Write the migration**
 
 Create `supabase/migrations/0013_campground_amenity_fee_filter_rpcs.sql`:
 
@@ -214,11 +214,11 @@ grant execute on function public.get_campgrounds_by_ids(
 ) to anon, authenticated;
 ```
 
-- [ ] **Step 2: Apply the migration**
+- [x] **Step 2: Apply the migration**
 
 Using `mcp__claude_ai_Supabase__apply_migration`, apply the SQL above to project `jpiicvvnipsckkhgjinn` as migration `0013_campground_amenity_fee_filter_rpcs`.
 
-- [ ] **Step 3: Verify the RPC changes**
+- [x] **Step 3: Verify the RPC changes**
 
 Using `mcp__claude_ai_Supabase__execute_sql` against project `jpiicvvnipsckkhgjinn`, run:
 
@@ -229,7 +229,7 @@ select count(*) from nearest_campgrounds(44.3, -68.2, 50, null, null, true, null
 
 Expected: the first call returns the same count as before this migration (no columns populated yet, since Task 3 hasn't run — this just confirms the new params don't error and default to unfiltered behavior). The second call (`require_showers => true`) returns `0`, since no row has `has_showers = true` yet — that's expected until Task 3's sync runs; the goal here is confirming the query executes without error, not that it returns real results yet.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add supabase/migrations/0013_campground_amenity_fee_filter_rpcs.sql
@@ -248,7 +248,7 @@ git commit -m "Add amenity/fee filter params to campground RPCs"
 - Consumes: nothing new.
 - Produces: `CampgroundRow` gains `has_showers: boolean | null`, `has_potable_water: boolean | null`, `has_dump_station: boolean | null`, `has_toilets: boolean | null`, `min_fee_cents: number | null`. Consumed by Task 2's columns (already exist) — this task just makes `nps-sync` populate them going forward.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Add to `supabase/functions/nps-sync/transform.test.ts` (append after the existing two tests, imports unchanged):
 
@@ -403,12 +403,12 @@ Deno.test("toCampgroundRow treats an empty fees array as unknown, not free", () 
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `deno test supabase/functions/nps-sync/transform.test.ts`
 Expected: FAIL — `has_showers`/`has_potable_water`/`has_dump_station`/`has_toilets`/`min_fee_cents` are all `undefined` on the returned row (not yet produced by `toCampgroundRow`), so every new assertion fails.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 Edit `supabase/functions/nps-sync/transform.ts`:
 
@@ -516,12 +516,12 @@ export function toCampgroundRow(record: NpsCampgroundRecord): CampgroundRow | nu
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `deno test supabase/functions/nps-sync/transform.test.ts`
 Expected: PASS — 15 tests passed (2 pre-existing + 13 new), 0 failed.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add supabase/functions/nps-sync/transform.ts supabase/functions/nps-sync/transform.test.ts
@@ -540,7 +540,7 @@ git commit -m "Populate amenity/fee columns from NPS's raw amenities and fees da
 - Consumes: `nearest_campgrounds`/`get_campgrounds_by_ids`'s new params (Task 2).
 - Produces: an `AmenityFeeFilters` interface (`{ requireShowers?: boolean; requirePotableWater?: boolean; requireDumpStation?: boolean; requireToilets?: boolean; maxFeeCents?: number }`) and updated signatures `CampgroundsService.getNearest(coords, limit?, agencies?, maxDistanceMeters?, filters?: AmenityFeeFilters)` and `CampgroundsService.getByIds(ids, agencies?, filters?: AmenityFeeFilters)`. Consumed by Task 5 (`FinderComponent`).
 
-- [ ] **Step 1: Write the failing tests first**
+- [x] **Step 1: Write the failing tests first**
 
 Edit `src/app/core/services/campgrounds.service.spec.ts` — update the base `'maps RPC rows to Campground objects'` test's expected RPC call args to include the five new keys as `null` (append after `max_distance_m: null,` — if the radius plan's task already added that key, this task adds five more alongside it; if it's not there yet, add it too matching the radius plan's Task 2):
 
@@ -600,12 +600,12 @@ Add a new test after the `getByIds` tests:
 
 Leave the error-path tests and `searchByName` tests unchanged.
 
-- [ ] **Step 2: Run tests to verify the new/changed ones fail**
+- [x] **Step 2: Run tests to verify the new/changed ones fail**
 
 Run: `npx ng test --watch=false`
 Expected: FAIL on the tests just edited — the service doesn't send the five new RPC keys yet.
 
-- [ ] **Step 3: Update the implementation**
+- [x] **Step 3: Update the implementation**
 
 Edit `src/app/core/services/campgrounds.service.ts` — add the `AmenityFeeFilters` interface and update both `getNearest` and `getByIds` (leave `searchByName` and the row-mapping logic inside each method unchanged; only the RPC-call parameter object changes):
 
@@ -720,12 +720,12 @@ export class CampgroundsService {
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `npx ng test --watch=false`
 Expected: PASS — all `CampgroundsService` tests green.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/app/core/services/campgrounds.service.ts src/app/core/services/campgrounds.service.spec.ts
@@ -745,7 +745,7 @@ git commit -m "Forward amenity/fee filters from CampgroundsService"
 - Consumes: `CampgroundsService.getNearest(coords, limit?, agencies?, maxDistanceMeters?, filters?)` (Task 4).
 - Produces: `FinderComponent.requireShowers/requirePotableWater/requireDumpStation/requireToilets: boolean`, `FinderComponent.PRICE_OPTIONS: { label: string; value: number | null }[]`, `FinderComponent.selectedMaxFeeCents: number | null`.
 
-- [ ] **Step 1: Write the failing tests first**
+- [x] **Step 1: Write the failing tests first**
 
 Edit `src/app/features/finder/finder.component.spec.ts` — add tests after the existing ones (assumes the radius plan's `onFilterChange()` rename has already landed; if not, use `onAgencyFilterChange()` instead and adjust):
 
@@ -784,12 +784,12 @@ Edit `src/app/features/finder/finder.component.spec.ts` — add tests after the 
   });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `npx ng test --watch=false`
 Expected: FAIL — `requireShowers`/`requirePotableWater`/`requireDumpStation`/`requireToilets`/`selectedMaxFeeCents`/`PRICE_OPTIONS` don't exist yet, and `getNearest` isn't called with a filters object.
 
-- [ ] **Step 3: Update the component**
+- [x] **Step 3: Update the component**
 
 Edit `src/app/features/finder/finder.component.ts` — add the new state fields, the `PRICE_OPTIONS` array, and update `loadNearest` to build and pass the `AmenityFeeFilters` object. Add `CheckboxModule` to imports and the `AmenityFeeFilters` import:
 
@@ -918,7 +918,7 @@ export class FinderComponent implements OnInit {
 }
 ```
 
-- [ ] **Step 4: Add the amenity checkboxes and price dropdown to the template**
+- [x] **Step 4: Add the amenity checkboxes and price dropdown to the template**
 
 Edit `src/app/features/finder/finder.component.html` — add inside the existing `.agency-filter` div, after the radius `p-select`:
 
@@ -957,12 +957,12 @@ Edit `src/app/features/finder/finder.component.html` — add inside the existing
 
 (This inserts after the radius `p-select` from the prerequisite radius plan, inside the same `.agency-filter` div that already contains the agency multiselect and radius dropdown.)
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `npx ng test --watch=false`
 Expected: PASS — all `FinderComponent` tests green, including the two new ones.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/app/features/finder/finder.component.ts src/app/features/finder/finder.component.html src/app/features/finder/finder.component.spec.ts
@@ -975,7 +975,7 @@ git commit -m "Add amenity and price filters to the Finder view"
 
 **Files:** none (verification only)
 
-- [ ] **Step 1: Run the full test suite and build**
+- [x] **Step 1: Run the full test suite and build**
 
 ```bash
 npx ng test --watch=false
@@ -986,7 +986,7 @@ deno test supabase/functions/ridb-sync/
 
 Expected: all PASS, build succeeds with no new errors. The `ridb-sync` test run is a regression check confirming this plan didn't touch it.
 
-- [ ] **Step 2: Manually invoke `nps-sync` to backfill the new columns on existing rows**
+- [x] **Step 2: Manually invoke `nps-sync` to backfill the new columns on existing rows**
 
 The 663 already-synced NPS rows have `null` on all five new columns until `nps-sync` runs again (upserts are idempotent, so this is safe to run anytime). Invoke the deployed `nps-sync` function (Supabase Dashboard's "Invoke" button, or the same `curl`-with-bearer-token pattern used to invoke `ridb-sync` during the original RIDB plan's verification). Then confirm:
 
@@ -1001,7 +1001,7 @@ from public.campgrounds where source = 'nps';
 
 Expected: `showers_known` and `fee_known` are both greater than 0 (most of the 663 rows have at least the array-based fields populated one way or another — an all-zero result means the parsing functions aren't matching real data and needs debugging, not that this step passed).
 
-- [ ] **Step 3: Manual end-to-end pass in the browser**
+- [x] **Step 3: Manual end-to-end pass in the browser**
 
 Run `npx ng serve`, open the Finder view.
 
@@ -1012,6 +1012,6 @@ Run `npx ng serve`, open the Finder view.
 5. Select "Free" — confirm results are limited to genuinely `$0.00`-fee campgrounds, not RIDB rows (which should never appear under any amenity/fee filter, since they're always `null`/unknown).
 6. Check the browser console for errors at every step above.
 
-- [ ] **Step 4: Report results**
+- [x] **Step 4: Report results**
 
 Confirm all steps above pass with no console errors before considering this plan complete. If any step fails, treat it as a bug against the specific task that introduced it, not a new task.

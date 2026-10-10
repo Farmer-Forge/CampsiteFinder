@@ -45,3 +45,6 @@ Thumbs.db
 .superpowers/
 .vercel
 .env*
+
+# Windows download markers (copied in via WSL)
+*:Zone.Identifier

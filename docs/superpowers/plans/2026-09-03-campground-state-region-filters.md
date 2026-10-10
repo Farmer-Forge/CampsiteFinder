@@ -27,19 +27,19 @@
 **Interfaces:**
 - Produces: a nullable `state text` column and `campgrounds_state_idx` index on `public.campgrounds`, which Tasks 2-5 depend on.
 
-- [ ] **Step 1: Write the migration**
+- [x] **Step 1: Write the migration**
 
 ```sql
 alter table public.campgrounds add column state text;
 create index campgrounds_state_idx on public.campgrounds (state);
 ```
 
-- [ ] **Step 2: Apply it to the local/dev Supabase project and confirm it runs cleanly**
+- [x] **Step 2: Apply it to the local/dev Supabase project and confirm it runs cleanly**
 
 Run: `supabase db push` (or your project's usual migration-apply command)
 Expected: migration `0012_campground_state` applies with no error; `select state from campgrounds limit 1;` returns `null` for existing rows.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add supabase/migrations/0012_campground_state.sql
@@ -58,7 +58,7 @@ git commit -m "Add nullable state column to campgrounds"
 - Consumes: `state text` column from Task 1 (only relevant at deploy time; this task's tests don't touch the DB).
 - Produces: `CampgroundRow.state: string | null`, which Task 4's `CampgroundsService` mapping assumes is present on every RIDB-sourced row once deployed.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Add to `supabase/functions/ridb-sync/transform.test.ts`:
 
@@ -114,12 +114,12 @@ Deno.test("toCampgroundRow sets state to null when no address is present", () =>
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `deno test supabase/functions/ridb-sync/transform.test.ts`
 Expected: FAIL — `row?.state` is `undefined`, not `"WI"`/`"CO"`/`null` (property doesn't exist yet).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 In `supabase/functions/ridb-sync/transform.ts`, add the address type and parsing function, and wire `state` into the returned row:
 
@@ -160,12 +160,12 @@ Add `state: null` to the existing `CampgroundRow` interface as `state: string | 
     state: resolveState(facility.FACILITYADDRESS),
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `deno test supabase/functions/ridb-sync/transform.test.ts`
 Expected: PASS, all tests including the pre-existing ones.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add supabase/functions/ridb-sync/transform.ts supabase/functions/ridb-sync/transform.test.ts
@@ -184,7 +184,7 @@ git commit -m "Parse state from RIDB facility address in ridb-sync"
 - Consumes: `state text` column from Task 1.
 - Produces: `CampgroundRow.state: string | null` for NPS-sourced rows, same shape as Task 2's RIDB output.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Add to `supabase/functions/nps-sync/transform.test.ts`:
 
@@ -258,12 +258,12 @@ Deno.test("toCampgroundRow sets state to null when no address is present", () =>
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `deno test supabase/functions/nps-sync/transform.test.ts`
 Expected: FAIL — `row?.state` is `undefined`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 In `supabase/functions/nps-sync/transform.ts`:
 
@@ -336,12 +336,12 @@ export function toCampgroundRow(record: NpsCampgroundRecord): CampgroundRow | nu
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `deno test supabase/functions/nps-sync/transform.test.ts`
 Expected: PASS, all tests including the pre-existing ones.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add supabase/functions/nps-sync/transform.ts supabase/functions/nps-sync/transform.test.ts
@@ -359,7 +359,7 @@ git commit -m "Parse state from NPS campground address in nps-sync"
 - Consumes: `state` column from Task 1.
 - Produces: `nearest_campgrounds(user_lat, user_lng, result_limit, agency_filter, max_distance_m, state_filter)` returning `state`; `get_campgrounds_by_ids(campground_ids, agency_filter)` returning `state` (no new parameter). Task 5's `CampgroundsService` calls both by these exact names.
 
-- [ ] **Step 1: Write the migration**
+- [x] **Step 1: Write the migration**
 
 ```sql
 drop function nearest_campgrounds(double precision, double precision, int, text[], double precision);
@@ -437,13 +437,13 @@ $$;
 grant execute on function public.get_campgrounds_by_ids(text[], text[]) to anon, authenticated;
 ```
 
-- [ ] **Step 2: Apply and smoke-test**
+- [x] **Step 2: Apply and smoke-test**
 
 Run: `supabase db push`
 Expected: migration `0013_state_filter_rpcs` applies with no error;
 `select * from nearest_campgrounds(39.5, -105.8, 5, null, null, array['CO']);` returns only Colorado rows (or zero rows if none are backfilled yet — not an error).
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add supabase/migrations/0013_state_filter_rpcs.sql
@@ -463,7 +463,7 @@ git commit -m "Add state_filter param to nearest_campgrounds; return state from 
 - Consumes: `nearest_campgrounds`/`get_campgrounds_by_ids` returning `state` (Task 4).
 - Produces: `Campground.state: string | null`; `CampgroundsService.getNearest(coords, limit?, agencies?, maxDistanceMeters?, states?)` — `states` is the **5th** parameter, appended after the existing four so no existing call site breaks positionally. Task 6's `FinderComponent` calls it with this exact signature.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Add to `src/app/core/services/campgrounds.service.spec.ts` (and update the two existing assertions noted below):
 
@@ -519,12 +519,12 @@ Update the existing `'maps RPC rows to Campground objects'`, `'forwards an agenc
 
 (apply the same `state_filter: null` addition to the agency-filter and max-distance tests' expected objects, and to the pagination test's — that one doesn't assert call args, so it needs no change).
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `npx ng test --watch=false`
 Expected: FAIL on the new tests (`state_filter` unexpected / `result[0].state` is `undefined`) and on the three updated assertions (actual call is missing `state_filter`).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 In `src/app/core/models/campground.model.ts`, add:
 
@@ -592,12 +592,12 @@ And add `state: row.state` to the row-mapping object inside `getByIds` (no new p
       amenities: row.amenities ?? {},
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `npx ng test --watch=false`
 Expected: PASS, all tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/app/core/models/campground.model.ts src/app/core/services/campgrounds.service.ts src/app/core/services/campgrounds.service.spec.ts
@@ -616,7 +616,7 @@ git commit -m "Add state to Campground model and thread states through Campgroun
 - Consumes: `CampgroundsService.getNearest(coords, limit?, agencies?, maxDistanceMeters?, states?)` (Task 5).
 - Produces: `ALL_STATES: string[]` (51 codes: 50 states + DC), `REGIONS: Record<string, string[]>` (`Northeast`/`Midwest`/`South`/`West`), `REGION_NAMES: string[]` (`Object.keys(REGIONS)`, for the template's MultiSelect options), `selectedStates: string[]`, `selectedRegions: string[]`, `onRegionFilterChange(): Promise<void>`. Task 7's template binds to all of these by these exact names.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Add to `src/app/features/finder/finder.component.spec.ts`:
 
@@ -675,12 +675,12 @@ Update the existing `'loads with the show-all radius by default'`, `'reloads wit
 
 (same trailing `undefined` added to the other two calls in those tests, keeping each test's existing agency/distance arguments unchanged).
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `npx ng test --watch=false`
 Expected: FAIL — `component.ALL_STATES`/`REGIONS`/`selectedRegions`/`onRegionFilterChange` don't exist yet, and the four updated assertions see one fewer argument than actually passed.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 In `src/app/features/finder/finder.component.ts`, add the constants and fields (after `RADIUS_OPTIONS`):
 
@@ -727,12 +727,12 @@ Add the region-change handler after `onFilterChange`:
   }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `npx ng test --watch=false`
 Expected: PASS, all tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/app/features/finder/finder.component.ts src/app/features/finder/finder.component.spec.ts
@@ -749,7 +749,7 @@ git commit -m "Add state and region filter state/logic to FinderComponent"
 **Interfaces:**
 - Consumes: `selectedStates`, `selectedRegions`, `ALL_STATES`, `REGION_NAMES`, `onFilterChange()`, `onRegionFilterChange()` (Task 6).
 
-- [ ] **Step 1: Add the MultiSelects**
+- [x] **Step 1: Add the MultiSelects**
 
 In `src/app/features/finder/finder.component.html`, inside the existing `.agency-filter` div, right after the agency `p-multiselect`:
 
@@ -770,17 +770,17 @@ In `src/app/features/finder/finder.component.html`, inside the existing `.agency
       />
 ```
 
-- [ ] **Step 2: Rebuild and manually verify in the browser**
+- [x] **Step 2: Rebuild and manually verify in the browser**
 
 Run: `npm run start`, then open `http://localhost:4200`.
 Expected: the Finder page shows three MultiSelects (Agency, Region, State) all defaulting to fully-selected; deselecting a region narrows the State MultiSelect's selection to that region's remaining states and reloads the map/table; deselecting individual states also reloads. No console errors.
 
-- [ ] **Step 3: Run the full test suite once more**
+- [x] **Step 3: Run the full test suite once more**
 
 Run: `npx ng test --watch=false`
 Expected: PASS, all tests (this task only touches the template, not logic, but confirms nothing regressed).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/app/features/finder/finder.component.html

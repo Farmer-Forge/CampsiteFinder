@@ -30,7 +30,7 @@
 **Interfaces:**
 - Produces: an `ApplicationConfig` (`appConfig`) in `src/app/app.config.ts` that later tasks add providers to.
 
-- [ ] **Step 1: Scaffold the Angular project into the current directory**
+- [x] **Step 1: Scaffold the Angular project into the current directory**
 
 The repo root already contains `.git/`, `docs/`, and `.gitignore` (which ignores `.superpowers/`, used by the SDD workflow driving this plan), so the directory is not empty and `ng new` needs `--force` to proceed:
 
@@ -46,7 +46,7 @@ If prompted interactively for anything not covered by a flag, accept the default
 echo ".superpowers/" >> .gitignore
 ```
 
-- [ ] **Step 2: Verify the scaffold builds and its default test passes**
+- [x] **Step 2: Verify the scaffold builds and its default test passes**
 
 Run: `npm test -- --watch=false --browsers=ChromeHeadless`
 Expected: the default `app` component spec passes.
@@ -54,7 +54,7 @@ Expected: the default `app` component spec passes.
 Run: `npx ng build`
 Expected: build succeeds with no errors.
 
-- [ ] **Step 3: Install PrimeNG and wire up the theme**
+- [x] **Step 3: Install PrimeNG and wire up the theme**
 
 Run: `npm install primeng @primeuix/themes primeicons`
 
@@ -89,12 +89,12 @@ Add to the top of `src/styles.scss`:
 @import "primeicons/primeicons.css";
 ```
 
-- [ ] **Step 4: Verify the build still succeeds with PrimeNG wired in**
+- [x] **Step 4: Verify the build still succeeds with PrimeNG wired in**
 
 Run: `npx ng build`
 Expected: build succeeds with no errors.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A
@@ -111,7 +111,7 @@ git commit -m "Scaffold Angular app with PrimeNG (Aura theme)"
 **Interfaces:**
 - Produces: tables `campgrounds`, `profiles`, `favorites`; RPC functions `nearest_campgrounds(user_lat float8, user_lng float8, result_limit int default 50)` and `get_campgrounds_by_ids(campground_ids text[])`, both returning rows shaped `(id text, park_code text, name text, description text, lat float8, lng float8, amenities jsonb, fees jsonb, reservation_url text, directions_url text, images jsonb, contact jsonb[, distance_m float8])`.
 
-- [ ] **Step 1: Write the migration**
+- [x] **Step 1: Write the migration**
 
 Create `supabase/migrations/0001_init.sql`:
 
@@ -259,15 +259,15 @@ $$;
 grant execute on function get_campgrounds_by_ids(text[]) to anon, authenticated;
 ```
 
-- [ ] **Step 2: Create the Supabase project (if one doesn't already exist for this app)**
+- [x] **Step 2: Create the Supabase project (if one doesn't already exist for this app)**
 
 Using the `mcp__claude_ai_Supabase__create_project` tool (or the Supabase dashboard), create a new project named `campsite-finder`. Record its project URL and anon key — they're needed in Task 5.
 
-- [ ] **Step 3: Apply the migration**
+- [x] **Step 3: Apply the migration**
 
 Using the `mcp__claude_ai_Supabase__apply_migration` tool, apply the SQL from Step 1 to the `campsite-finder` project as migration `0001_init`.
 
-- [ ] **Step 4: Verify the schema**
+- [x] **Step 4: Verify the schema**
 
 Using `mcp__claude_ai_Supabase__execute_sql`, run:
 
@@ -277,7 +277,7 @@ select nearest_campgrounds(38.9, -77.0, 5);
 
 Expected: an empty result set (no error) — the table is empty until Task 3 runs the sync.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add supabase/migrations/0001_init.sql
@@ -297,7 +297,7 @@ git commit -m "Add Supabase schema: campgrounds, profiles, favorites, nearest-ca
 - Consumes: table `campgrounds` from Task 2.
 - Produces: `toCampgroundRow(record: NpsCampgroundRecord): CampgroundRow | null` (pure, used by `index.ts` and tested directly).
 
-- [ ] **Step 1: Write the failing test for the transform function**
+- [x] **Step 1: Write the failing test for the transform function**
 
 Create `supabase/functions/nps-sync/transform.test.ts`:
 
@@ -348,12 +348,12 @@ Deno.test("toCampgroundRow returns null when coordinates are missing", () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `deno test supabase/functions/nps-sync/transform.test.ts`
 Expected: FAIL — `transform.ts` does not exist yet.
 
-- [ ] **Step 3: Implement the transform function**
+- [x] **Step 3: Implement the transform function**
 
 Create `supabase/functions/nps-sync/transform.ts`:
 
@@ -409,12 +409,12 @@ export function toCampgroundRow(record: NpsCampgroundRecord): CampgroundRow | nu
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 Run: `deno test supabase/functions/nps-sync/transform.test.ts`
 Expected: PASS (2 tests).
 
-- [ ] **Step 5: Implement the sync handler**
+- [x] **Step 5: Implement the sync handler**
 
 Create `supabase/functions/nps-sync/index.ts`:
 
@@ -476,13 +476,13 @@ Deno.serve(async (_req) => {
 });
 ```
 
-- [ ] **Step 6: Deploy the function and set its secret**
+- [x] **Step 6: Deploy the function and set its secret**
 
 Using `mcp__claude_ai_Supabase__deploy_edge_function`, deploy `nps-sync`.
 
 The NPS API key secret must be set by a human, not this implementer: no Supabase CLI is installed in this environment, and a real secret value shouldn't pass through subagent-run shell commands anyway. **Stop here and ask the human partner to set it** via the Supabase dashboard: Project Settings → Edge Functions → Secrets → add `NPS_API_KEY` with their key from developer.nps.gov. (`SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are auto-injected by Supabase and don't need to be set manually.) Report status NEEDS_CONTEXT with this ask if the secret isn't confirmed set yet; do not attempt to work around it.
 
-- [ ] **Step 7: Trigger the sync once manually and verify data landed**
+- [x] **Step 7: Trigger the sync once manually and verify data landed**
 
 ```bash
 curl -X POST "<your-project-url>/functions/v1/nps-sync" \
@@ -497,7 +497,7 @@ select count(*) from campgrounds;
 
 Expected: a count greater than 0.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add supabase/functions/nps-sync
@@ -511,7 +511,7 @@ git commit -m "Add NPS-to-Supabase campground sync Edge Function"
 **Files:**
 - Create: `supabase/migrations/0002_schedule_nps_sync.sql`
 
-- [ ] **Step 1: Write the scheduling migration**
+- [x] **Step 1: Write the scheduling migration**
 
 Create `supabase/migrations/0002_schedule_nps_sync.sql` (fill in your project's function URL and service role key from the Supabase dashboard before applying):
 
@@ -531,11 +531,11 @@ select cron.schedule(
 );
 ```
 
-- [ ] **Step 2: Apply it**
+- [x] **Step 2: Apply it**
 
 Using `mcp__claude_ai_Supabase__apply_migration`, apply the SQL above (with real values substituted) as migration `0002_schedule_nps_sync`.
 
-- [ ] **Step 3: Verify the job is scheduled**
+- [x] **Step 3: Verify the job is scheduled**
 
 Using `mcp__claude_ai_Supabase__execute_sql`:
 
@@ -545,7 +545,7 @@ select jobname, schedule from cron.job where jobname = 'nps-campground-sync-week
 
 Expected: one row.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add supabase/migrations/0002_schedule_nps_sync.sql
@@ -565,11 +565,11 @@ git commit -m "Schedule weekly NPS campground sync via pg_cron"
 **Interfaces:**
 - Produces: `SupabaseService` with `client: SupabaseClient`, `session: Signal<Session | null>`, `isAuthenticated: boolean` — consumed by every service/component in later tasks.
 
-- [ ] **Step 1: Install the Supabase client**
+- [x] **Step 1: Install the Supabase client**
 
 Run: `npm install @supabase/supabase-js`
 
-- [ ] **Step 2: Add environment files**
+- [x] **Step 2: Add environment files**
 
 Create `src/environments/environment.ts` (the anon key and URL are public-safe by design — access control is enforced by RLS, not by hiding these values):
 
@@ -583,7 +583,7 @@ export const environment = {
 
 Create `src/environments/environment.prod.ts` with the same shape and `production: true`.
 
-- [ ] **Step 3: Write the failing test**
+- [x] **Step 3: Write the failing test**
 
 Create `src/app/core/services/supabase.service.spec.ts`:
 
@@ -605,12 +605,12 @@ describe('SupabaseService', () => {
 });
 ```
 
-- [ ] **Step 4: Run the test to verify it fails**
+- [x] **Step 4: Run the test to verify it fails**
 
 Run: `npm test -- --watch=false --browsers=ChromeHeadless`
 Expected: FAIL — `SupabaseService` does not exist yet.
 
-- [ ] **Step 5: Implement the service**
+- [x] **Step 5: Implement the service**
 
 Create `src/app/core/services/supabase.service.ts`:
 
@@ -635,12 +635,12 @@ export class SupabaseService {
 }
 ```
 
-- [ ] **Step 6: Run the test to verify it passes**
+- [x] **Step 6: Run the test to verify it passes**
 
 Run: `npm test -- --watch=false --browsers=ChromeHeadless`
 Expected: PASS.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/environments src/app/core/services/supabase.service.ts src/app/core/services/supabase.service.spec.ts
@@ -658,7 +658,7 @@ git commit -m "Add SupabaseService (client + auth session signal)"
 **Interfaces:**
 - Produces: `GeolocationService.getCurrentPosition(): Promise<Coordinates>` and `interface Coordinates { lat: number; lng: number }` — consumed by `CampgroundsService` callers (Task 10).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `src/app/core/services/geolocation.service.spec.ts`:
 
@@ -702,12 +702,12 @@ describe('GeolocationService', () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `npm test -- --watch=false --browsers=ChromeHeadless`
 Expected: FAIL — `GeolocationService` does not exist yet.
 
-- [ ] **Step 3: Implement the service**
+- [x] **Step 3: Implement the service**
 
 Create `src/app/core/services/geolocation.service.ts`:
 
@@ -737,12 +737,12 @@ export class GeolocationService {
 }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `npm test -- --watch=false --browsers=ChromeHeadless`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/app/core/services/geolocation.service.ts src/app/core/services/geolocation.service.spec.ts
@@ -762,7 +762,7 @@ git commit -m "Add GeolocationService with unsupported-browser fallback"
 - Consumes: `SupabaseService.client` (Task 5), `Coordinates` (Task 6).
 - Produces: `interface Campground { id, parkCode, name, description, lat, lng, amenities, fees, reservationUrl, directionsUrl, images, contact, distanceMeters }` and `CampgroundsService.getNearest(coords: Coordinates, limit = 50): Promise<Campground[]>` — consumed by `FinderComponent` (Task 10).
 
-- [ ] **Step 1: Add the model**
+- [x] **Step 1: Add the model**
 
 Create `src/app/core/models/campground.model.ts`:
 
@@ -784,7 +784,7 @@ export interface Campground {
 }
 ```
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 Create `src/app/core/services/campgrounds.service.spec.ts`:
 
@@ -832,12 +832,12 @@ describe('CampgroundsService', () => {
 });
 ```
 
-- [ ] **Step 3: Run the tests to verify they fail**
+- [x] **Step 3: Run the tests to verify they fail**
 
 Run: `npm test -- --watch=false --browsers=ChromeHeadless`
 Expected: FAIL — `CampgroundsService` does not exist yet.
 
-- [ ] **Step 4: Implement the service**
+- [x] **Step 4: Implement the service**
 
 Create `src/app/core/services/campgrounds.service.ts`:
 
@@ -879,12 +879,12 @@ export class CampgroundsService {
 }
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `npm test -- --watch=false --browsers=ChromeHeadless`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/app/core/models/campground.model.ts src/app/core/services/campgrounds.service.ts src/app/core/services/campgrounds.service.spec.ts
@@ -904,11 +904,11 @@ git commit -m "Add CampgroundsService wrapping the nearest_campgrounds RPC"
 - Consumes: `Campground[]` (Task 7).
 - Produces: `<app-campground-map [campgrounds] [selectedId]>` — consumed by `FinderComponent` (Task 10) and `FavoritesComponent` (Task 13).
 
-- [ ] **Step 1: Install Leaflet**
+- [x] **Step 1: Install Leaflet**
 
 Run: `npm install leaflet @bluehalo/ngx-leaflet && npm install --save-dev @types/leaflet`
 
-- [ ] **Step 2: Write the failing test**
+- [x] **Step 2: Write the failing test**
 
 Create `src/app/features/finder/campground-map/campground-map.component.spec.ts`:
 
@@ -938,12 +938,12 @@ describe('CampgroundMapComponent', () => {
 });
 ```
 
-- [ ] **Step 3: Run the test to verify it fails**
+- [x] **Step 3: Run the test to verify it fails**
 
 Run: `npm test -- --watch=false --browsers=ChromeHeadless`
 Expected: FAIL — `CampgroundMapComponent` does not exist yet.
 
-- [ ] **Step 4: Implement the component**
+- [x] **Step 4: Implement the component**
 
 Create `src/app/features/finder/campground-map/campground-map.component.scss`:
 
@@ -1017,12 +1017,12 @@ export class CampgroundMapComponent implements OnChanges {
 }
 ```
 
-- [ ] **Step 5: Run the test to verify it passes**
+- [x] **Step 5: Run the test to verify it passes**
 
 Run: `npm test -- --watch=false --browsers=ChromeHeadless`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/app/features/finder/campground-map
@@ -1041,7 +1041,7 @@ git commit -m "Add Leaflet-based CampgroundMapComponent"
 - Consumes: `Campground[]` (Task 7).
 - Produces: `<app-campground-table [campgrounds] [selected] (selectedChange)>` — consumed by `FinderComponent` (Task 10) and `FavoritesComponent` (Task 13).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `src/app/features/finder/campground-table/campground-table.component.spec.ts`:
 
@@ -1071,12 +1071,12 @@ describe('CampgroundTableComponent', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `npm test -- --watch=false --browsers=ChromeHeadless`
 Expected: FAIL — `CampgroundTableComponent` does not exist yet.
 
-- [ ] **Step 3: Implement the component**
+- [x] **Step 3: Implement the component**
 
 Create `src/app/features/finder/campground-table/campground-table.component.ts`:
 
@@ -1127,12 +1127,12 @@ export class CampgroundTableComponent {
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 Run: `npm test -- --watch=false --browsers=ChromeHeadless`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/app/features/finder/campground-table
@@ -1154,7 +1154,7 @@ git commit -m "Add PrimeNG DataTable CampgroundTableComponent"
 - Consumes: `GeolocationService` (Task 6), `CampgroundsService` (Task 7), `CampgroundMapComponent` (Task 8), `CampgroundTableComponent` (Task 9).
 - Produces: route `''` → `FinderComponent`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `src/app/features/finder/finder.component.spec.ts`:
 
@@ -1207,12 +1207,12 @@ describe('FinderComponent', () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `npm test -- --watch=false --browsers=ChromeHeadless`
 Expected: FAIL — `FinderComponent` does not exist yet.
 
-- [ ] **Step 3: Implement the component**
+- [x] **Step 3: Implement the component**
 
 Create `src/app/features/finder/finder.component.scss`:
 
@@ -1348,12 +1348,12 @@ export const routes: Routes = [
 ];
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `npm test -- --watch=false --browsers=ChromeHeadless`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/app/features/finder/finder.component.ts src/app/features/finder/finder.component.html src/app/features/finder/finder.component.scss src/app/features/finder/finder.component.spec.ts src/app/app.routes.ts
@@ -1377,7 +1377,7 @@ git commit -m "Add FinderComponent: geolocation-driven nearest-campground view"
 - Consumes: `SupabaseService` (Task 5).
 - Produces: routes `'login'` → `LoginComponent`, `'signup'` → `SignupComponent`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `src/app/features/auth/login.component.spec.ts`:
 
@@ -1478,12 +1478,12 @@ describe('SignupComponent', () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `npm test -- --watch=false --browsers=ChromeHeadless`
 Expected: FAIL — `LoginComponent`/`SignupComponent` do not exist yet.
 
-- [ ] **Step 3: Implement Login**
+- [x] **Step 3: Implement Login**
 
 Create `src/app/features/auth/login.component.html`:
 
@@ -1545,7 +1545,7 @@ export class LoginComponent {
 }
 ```
 
-- [ ] **Step 4: Implement Signup**
+- [x] **Step 4: Implement Signup**
 
 Create `src/app/features/auth/signup.component.html`:
 
@@ -1624,12 +1624,12 @@ export const routes: Routes = [
 ];
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `npm test -- --watch=false --browsers=ChromeHeadless`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/app/features/auth src/app/app.routes.ts
@@ -1651,7 +1651,7 @@ git commit -m "Add Supabase email/password login and signup"
 - Consumes: `SupabaseService` (Task 5).
 - Produces: `FavoritesService` with `favoriteIds: Signal<Set<string>>`, `loadFavoriteIds(): Promise<void>`, `toggleFavorite(campgroundId: string): Promise<void>` — consumed by `FavoriteToggleComponent` here and `FavoritesComponent` (Task 13).
 
-- [ ] **Step 1: Write the failing service tests**
+- [x] **Step 1: Write the failing service tests**
 
 Create `src/app/core/services/favorites.service.spec.ts`:
 
@@ -1714,12 +1714,12 @@ describe('FavoritesService', () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `npm test -- --watch=false --browsers=ChromeHeadless`
 Expected: FAIL — `FavoritesService` does not exist yet.
 
-- [ ] **Step 3: Implement the service**
+- [x] **Step 3: Implement the service**
 
 Create `src/app/core/services/favorites.service.ts`:
 
@@ -1774,12 +1774,12 @@ export class FavoritesService {
 }
 ```
 
-- [ ] **Step 4: Run the service tests to verify they pass**
+- [x] **Step 4: Run the service tests to verify they pass**
 
 Run: `npm test -- --watch=false --browsers=ChromeHeadless`
 Expected: PASS.
 
-- [ ] **Step 5: Write the failing toggle-button test**
+- [x] **Step 5: Write the failing toggle-button test**
 
 Create `src/app/shared/favorite-toggle/favorite-toggle.component.spec.ts`:
 
@@ -1822,12 +1822,12 @@ describe('FavoriteToggleComponent', () => {
 });
 ```
 
-- [ ] **Step 6: Run the test to verify it fails**
+- [x] **Step 6: Run the test to verify it fails**
 
 Run: `npm test -- --watch=false --browsers=ChromeHeadless`
 Expected: FAIL — `FavoriteToggleComponent` does not exist yet.
 
-- [ ] **Step 7: Implement the toggle button**
+- [x] **Step 7: Implement the toggle button**
 
 Create `src/app/shared/favorite-toggle/favorite-toggle.component.ts`:
 
@@ -1870,7 +1870,7 @@ export class FavoriteToggleComponent implements OnInit {
 }
 ```
 
-- [ ] **Step 8: Wire the toggle into the campgrounds table**
+- [x] **Step 8: Wire the toggle into the campgrounds table**
 
 Modify `src/app/features/finder/campground-table/campground-table.component.ts`: add `FavoriteToggleComponent` to `imports`, and add a column to both the header and body templates:
 
@@ -1882,12 +1882,12 @@ Modify `src/app/features/finder/campground-table/campground-table.component.ts`:
 <td><app-favorite-toggle [campgroundId]="campground.id" /></td>
 ```
 
-- [ ] **Step 9: Run the full suite to verify everything still passes**
+- [x] **Step 9: Run the full suite to verify everything still passes**
 
 Run: `npm test -- --watch=false --browsers=ChromeHeadless`
 Expected: PASS.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add src/app/core/services/favorites.service.ts src/app/core/services/favorites.service.spec.ts src/app/shared/favorite-toggle src/app/features/finder/campground-table/campground-table.component.ts
@@ -1911,7 +1911,7 @@ git commit -m "Add FavoritesService and favorite-toggle button"
 - Consumes: `FavoritesService` (Task 12), `SupabaseService` (Task 5), `CampgroundMapComponent` (Task 8), `CampgroundTableComponent` (Task 9), RPC `get_campgrounds_by_ids` (Task 2).
 - Produces: route `'favorites'` → `FavoritesComponent` (guarded), `authGuard: CanActivateFn`.
 
-- [ ] **Step 1: Write the failing guard test**
+- [x] **Step 1: Write the failing guard test**
 
 Create `src/app/core/guards/auth.guard.spec.ts`:
 
@@ -1939,12 +1939,12 @@ describe('authGuard', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `npm test -- --watch=false --browsers=ChromeHeadless`
 Expected: FAIL — `authGuard` does not exist yet.
 
-- [ ] **Step 3: Implement the guard**
+- [x] **Step 3: Implement the guard**
 
 Create `src/app/core/guards/auth.guard.ts`:
 
@@ -1964,7 +1964,7 @@ export const authGuard: CanActivateFn = () => {
 };
 ```
 
-- [ ] **Step 4: Write the failing FavoritesComponent tests**
+- [x] **Step 4: Write the failing FavoritesComponent tests**
 
 Create `src/app/features/favorites/favorites.component.spec.ts`:
 
@@ -2023,12 +2023,12 @@ describe('FavoritesComponent', () => {
 });
 ```
 
-- [ ] **Step 5: Run the tests to verify they fail**
+- [x] **Step 5: Run the tests to verify they fail**
 
 Run: `npm test -- --watch=false --browsers=ChromeHeadless`
 Expected: FAIL — `FavoritesComponent` does not exist yet.
 
-- [ ] **Step 6: Implement FavoritesComponent**
+- [x] **Step 6: Implement FavoritesComponent**
 
 Create `src/app/features/favorites/favorites.component.html`:
 
@@ -2103,7 +2103,7 @@ export class FavoritesComponent implements OnInit {
 }
 ```
 
-- [ ] **Step 7: Wire routing and navigation**
+- [x] **Step 7: Wire routing and navigation**
 
 Update `src/app/app.routes.ts`:
 
@@ -2155,12 +2155,12 @@ onSignOut(): void {
 }
 ```
 
-- [ ] **Step 8: Run the full suite to verify everything passes**
+- [x] **Step 8: Run the full suite to verify everything passes**
 
 Run: `npm test -- --watch=false --browsers=ChromeHeadless`
 Expected: PASS.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add src/app/features/favorites src/app/core/guards src/app/app.routes.ts src/app/app.html src/app/app.ts src/app/app.component.html src/app/app.component.ts
@@ -2184,7 +2184,7 @@ git commit -m "Add Favorites view, auth guard, and app navigation"
 - Consumes: `SupabaseService` (Task 5), RPC `get_campgrounds_by_ids` (Task 2), `FavoriteToggleComponent` (Task 12).
 - Produces: route `'campground/:id'` → `CampgroundDetailComponent`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `src/app/features/campground-detail/campground-detail.component.spec.ts`:
 
@@ -2246,12 +2246,12 @@ describe('CampgroundDetailComponent', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `npm test -- --watch=false --browsers=ChromeHeadless`
 Expected: FAIL — `CampgroundDetailComponent` does not exist yet.
 
-- [ ] **Step 3: Implement the component**
+- [x] **Step 3: Implement the component**
 
 Create `src/app/features/campground-detail/campground-detail.component.html`:
 
@@ -2324,7 +2324,7 @@ export class CampgroundDetailComponent implements OnInit {
 }
 ```
 
-- [ ] **Step 4: Wire routing and a link from the table**
+- [x] **Step 4: Wire routing and a link from the table**
 
 Update `src/app/app.routes.ts` to add:
 
@@ -2341,12 +2341,12 @@ Modify `src/app/features/finder/campground-table/campground-table.component.ts`:
 <td><a [routerLink]="['/campground', campground.id]">{{ campground.name }}</a></td>
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `npm test -- --watch=false --browsers=ChromeHeadless`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/app/features/campground-detail src/app/app.routes.ts src/app/features/finder/campground-table/campground-table.component.ts
@@ -2362,27 +2362,27 @@ git commit -m "Add campground detail view with route link from the table"
 - Modify: `src/app/app.config.ts` (service worker provider, added automatically by the schematic)
 - Modify: `src/index.html` (manifest link, added automatically)
 
-- [ ] **Step 1: Add the PWA schematic**
+- [x] **Step 1: Add the PWA schematic**
 
 Run: `npx ng add @angular/pwa`
 
 If prompted for a project name, choose `campsite-finder`.
 
-- [ ] **Step 2: Verify the manifest and service worker config were generated**
+- [x] **Step 2: Verify the manifest and service worker config were generated**
 
 Confirm `public/manifest.webmanifest` and `ngsw-config.json` now exist, and that `src/app/app.config.ts` has a `provideServiceWorker(...)` entry added to `providers`.
 
-- [ ] **Step 3: Verify a production build succeeds with the service worker enabled**
+- [x] **Step 3: Verify a production build succeeds with the service worker enabled**
 
 Run: `npx ng build`
 Expected: build succeeds; output includes `ngsw.json` and `ngsw-worker.js` in `dist/`.
 
-- [ ] **Step 4: Run the full test suite one final time**
+- [x] **Step 4: Run the full test suite one final time**
 
 Run: `npm test -- --watch=false --browsers=ChromeHeadless`
 Expected: all specs across every task pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A

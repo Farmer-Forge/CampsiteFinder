@@ -57,12 +57,12 @@
 **Interfaces:**
 - Produces: `public.campgrounds.agency text not null default 'NPS'`, `public.campgrounds.source text not null default 'nps'`, `public.campgrounds.park_code` now nullable, index `campgrounds_agency_idx`. Consumed by Task 2 (RPCs), Task 5 (`ridb-sync` writes `agency`/`source` on every row it upserts).
 
-- [ ] **Step 1: Confirm the next migration number is still free**
+- [x] **Step 1: Confirm the next migration number is still free**
 
 Run: `ls supabase/migrations/`
 Expected: highest existing file is `0008_campground_admin.sql` — `0009` is free. If not, renumber this task's file to the next free number and adjust Task 2 to follow it.
 
-- [ ] **Step 2: Write the migration**
+- [x] **Step 2: Write the migration**
 
 Create `supabase/migrations/0009_ridb_agency_columns.sql`:
 
@@ -75,11 +75,11 @@ alter table public.campgrounds
 create index campgrounds_agency_idx on public.campgrounds (agency);
 ```
 
-- [ ] **Step 3: Apply the migration**
+- [x] **Step 3: Apply the migration**
 
 Using `mcp__claude_ai_Supabase__apply_migration`, apply the SQL above to project `jpiicvvnipsckkhgjinn` as migration `0009_ridb_agency_columns` (adjust the number if Step 1 found a later one already taken).
 
-- [ ] **Step 4: Verify the schema change**
+- [x] **Step 4: Verify the schema change**
 
 Using `mcp__claude_ai_Supabase__execute_sql` against project `jpiicvvnipsckkhgjinn`, run:
 
@@ -93,7 +93,7 @@ order by column_name;
 
 Expected: `agency` — `is_nullable = 'NO'`, default `'NPS'::text`; `park_code` — `is_nullable = 'YES'`; `source` — `is_nullable = 'NO'`, default `'nps'::text`. Also confirm existing rows were backfilled: `select distinct agency, source from public.campgrounds;` should return exactly one row, `('NPS', 'nps')`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add supabase/migrations/0009_ridb_agency_columns.sql
@@ -111,7 +111,7 @@ git commit -m "Add agency/source columns to campgrounds for RIDB sync"
 - Consumes: `public.campgrounds.agency` (Task 1).
 - Produces: `nearest_campgrounds(user_lat double precision, user_lng double precision, result_limit int default 50, agency_filter text[] default null)` and `get_campgrounds_by_ids(campground_ids text[], agency_filter text[] default null)`, both now returning an `agency text` column. Consumed by Task 6 (`CampgroundsService`).
 
-- [ ] **Step 1: Write the migration**
+- [x] **Step 1: Write the migration**
 
 Create `supabase/migrations/0010_ridb_agency_filter_rpcs.sql`:
 
@@ -183,11 +183,11 @@ $$;
 grant execute on function public.get_campgrounds_by_ids(text[], text[]) to anon, authenticated;
 ```
 
-- [ ] **Step 2: Apply the migration**
+- [x] **Step 2: Apply the migration**
 
 Using `mcp__claude_ai_Supabase__apply_migration`, apply the SQL above to project `jpiicvvnipsckkhgjinn` as migration `0010_ridb_agency_filter_rpcs`.
 
-- [ ] **Step 3: Verify the RPC changes**
+- [x] **Step 3: Verify the RPC changes**
 
 Using `mcp__claude_ai_Supabase__execute_sql` against project `jpiicvvnipsckkhgjinn`, run:
 
@@ -198,7 +198,7 @@ select id, name, agency from nearest_campgrounds(44.3, -68.2, 3, array['USFS']);
 
 Expected: the first call returns up to 3 existing NPS rows with `agency = 'NPS'`; the second call returns zero rows without erroring (no RIDB data exists yet — this just confirms the filter predicate and the `text[]` param work).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add supabase/migrations/0010_ridb_agency_filter_rpcs.sql
@@ -216,7 +216,7 @@ git commit -m "Add agency_filter param and agency column to campground RPCs"
 **Interfaces:**
 - Produces: `RidbOrganization` interface (`OrgAbbrevName?: string`) and `resolveAgency(organizations: RidbOrganization[] | undefined): string | null`. Consumed by Task 4 (`transform.ts`).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `supabase/functions/ridb-sync/agency.test.ts`:
 
@@ -261,12 +261,12 @@ Deno.test("resolveAgency returns null when ORGANIZATION is empty", () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `deno test supabase/functions/ridb-sync/agency.test.ts`
 Expected: FAIL — `agency.ts` does not exist yet (module not found).
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 Create `supabase/functions/ridb-sync/agency.ts`:
 
@@ -295,12 +295,12 @@ export function resolveAgency(organizations: RidbOrganization[] | undefined): st
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `deno test supabase/functions/ridb-sync/agency.test.ts`
 Expected: PASS — 9 tests passed, 0 failed.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add supabase/functions/ridb-sync/agency.ts supabase/functions/ridb-sync/agency.test.ts
@@ -319,7 +319,7 @@ git commit -m "Add RIDB organization-to-agency resolution"
 - Consumes: `resolveAgency`, `RidbOrganization` from `./agency.ts` (Task 3).
 - Produces: `RidbFacilityRecord` interface, `CampgroundRow` interface (`{ id, park_code: null, name, description, location, agency, source: 'ridb', amenities, fees, reservation_url, directions_url, images, contact }`), and `toCampgroundRow(facility: RidbFacilityRecord): CampgroundRow | null`. Consumed by Task 5 (`index.ts`).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `supabase/functions/ridb-sync/transform.test.ts`:
 
@@ -441,12 +441,12 @@ Deno.test("toCampgroundRow defaults optional text fields to empty strings and co
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `deno test supabase/functions/ridb-sync/transform.test.ts`
 Expected: FAIL — `transform.ts` does not exist yet.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 Create `supabase/functions/ridb-sync/transform.ts`:
 
@@ -514,12 +514,12 @@ export function toCampgroundRow(facility: RidbFacilityRecord): CampgroundRow | n
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `deno test supabase/functions/ridb-sync/transform.test.ts`
 Expected: PASS — 7 tests passed, 0 failed.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add supabase/functions/ridb-sync/transform.ts supabase/functions/ridb-sync/transform.test.ts
@@ -537,7 +537,7 @@ git commit -m "Add RIDB facility to CampgroundRow transform"
 - Consumes: `toCampgroundRow` from `./transform.ts` (Task 4).
 - Produces: a deployed `ridb-sync` Edge Function, invoked the same way `nps-sync` is (HTTP trigger / dashboard schedule).
 
-- [ ] **Step 1: Write `index.ts`**
+- [x] **Step 1: Write `index.ts`**
 
 Create `supabase/functions/ridb-sync/index.ts`:
 
@@ -610,20 +610,20 @@ Deno.serve(async (_req) => {
 });
 ```
 
-- [ ] **Step 2: Type-check it**
+- [x] **Step 2: Type-check it**
 
 Run: `deno check supabase/functions/ridb-sync/index.ts`
 Expected: no errors (this mirrors `nps-sync/index.ts` structurally; `deno check` follows the `toCampgroundRow` import and the `jsr:@supabase/supabase-js@2` types).
 
-- [ ] **Step 3: Manual prerequisite — get an RIDB API key and set the secret**
+- [x] **Step 3: Manual prerequisite — get an RIDB API key and set the secret**
 
 This step needs you (Shawn), not the agent: sign up for a free API key at `ridb.recreation.gov`, then set it as a Supabase Edge Function secret named `RIDB_API_KEY` for project `jpiicvvnipsckkhgjinn` (Supabase Dashboard → Edge Functions → Secrets — same place `NPS_API_KEY` already lives). `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` are auto-injected and need no setup, matching `nps-sync`.
 
-- [ ] **Step 4: Deploy**
+- [x] **Step 4: Deploy**
 
 Using `mcp__claude_ai_Supabase__deploy_edge_function`, deploy `ridb-sync` to project `jpiicvvnipsckkhgjinn`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add supabase/functions/ridb-sync/index.ts
@@ -643,7 +643,7 @@ git commit -m "Add ridb-sync Edge Function"
 - Consumes: `nearest_campgrounds`/`get_campgrounds_by_ids` RPCs now returning `agency` and accepting `agency_filter` (Task 2).
 - Produces: `Campground.agency: string`, `Campground.parkCode: string | null`; `CampgroundsService.getNearest(coords, limit?, agencies?: string[]): Promise<Campground[]>`; `CampgroundsService.getByIds(ids, agencies?: string[]): Promise<Campground[]>`. Consumed by Task 7 (table), Task 8 (Finder filter).
 
-- [ ] **Step 1: Update the model**
+- [x] **Step 1: Update the model**
 
 Edit `src/app/core/models/campground.model.ts`:
 
@@ -666,7 +666,7 @@ export interface Campground {
 }
 ```
 
-- [ ] **Step 2: Update the failing tests first**
+- [x] **Step 2: Update the failing tests first**
 
 Edit `src/app/core/services/campgrounds.service.spec.ts` — update the two RPC-mapping tests:
 
@@ -732,12 +732,12 @@ Update the `getByIds` mapping test:
 
 Leave the two error-path tests (`throws when the RPC call errors`, `throws when the getByIds RPC call errors`) and the `searchByName` tests unchanged — they don't assert call args.
 
-- [ ] **Step 3: Run tests to verify the new/changed ones fail**
+- [x] **Step 3: Run tests to verify the new/changed ones fail**
 
 Run: `npx ng test --watch=false`
 Expected: FAIL on the tests just edited — `CampgroundsService` doesn't send `agency_filter` yet, and `result[0].agency` is `undefined`.
 
-- [ ] **Step 4: Update the implementation**
+- [x] **Step 4: Update the implementation**
 
 Edit `src/app/core/services/campgrounds.service.ts`:
 
@@ -817,12 +817,12 @@ export class CampgroundsService {
 }
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `npx ng test --watch=false`
 Expected: PASS — all `CampgroundsService` tests green.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/app/core/models/campground.model.ts src/app/core/services/campgrounds.service.ts src/app/core/services/campgrounds.service.spec.ts
@@ -840,7 +840,7 @@ git commit -m "Add agency field and agency filter param to Campground model/serv
 **Interfaces:**
 - Consumes: `Campground.agency` (Task 6).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Add to `src/app/features/finder/campground-table/campground-table.component.spec.ts`:
 
@@ -855,12 +855,12 @@ Add to `src/app/features/finder/campground-table/campground-table.component.spec
   });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx ng test --watch=false`
 Expected: FAIL — no "Agency" column exists yet.
 
-- [ ] **Step 3: Add the column**
+- [x] **Step 3: Add the column**
 
 Edit `src/app/features/finder/campground-table/campground-table.component.ts` — in the `#header` template, add after the Park column:
 
@@ -876,12 +876,12 @@ And in the `#body` template, add after the Park cell:
           <td>{{ campground.agency }}</td>
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npx ng test --watch=false`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/app/features/finder/campground-table/campground-table.component.ts src/app/features/finder/campground-table/campground-table.component.spec.ts
@@ -901,7 +901,7 @@ git commit -m "Show managing agency in the campground table"
 - Consumes: `CampgroundsService.getNearest(coords, limit?, agencies?)` (Task 6).
 - Produces: `FinderComponent.ALL_AGENCIES: string[]`, `FinderComponent.selectedAgencies: string[]`, `FinderComponent.onAgencyFilterChange(): Promise<void>`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Add to `src/app/features/finder/finder.component.spec.ts`:
 
@@ -930,12 +930,12 @@ Add to `src/app/features/finder/finder.component.spec.ts`:
   });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `npx ng test --watch=false`
 Expected: FAIL — `selectedAgencies`/`ALL_AGENCIES`/`onAgencyFilterChange` don't exist yet.
 
-- [ ] **Step 3: Update the component**
+- [x] **Step 3: Update the component**
 
 Edit `src/app/features/finder/finder.component.ts`:
 
@@ -1021,7 +1021,7 @@ export class FinderComponent implements OnInit {
 }
 ```
 
-- [ ] **Step 4: Add the filter control to the template**
+- [x] **Step 4: Add the filter control to the template**
 
 Edit `src/app/features/finder/finder.component.html`:
 
@@ -1062,12 +1062,12 @@ Edit `src/app/features/finder/finder.component.html`:
 </div>
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `npx ng test --watch=false`
 Expected: PASS — all `FinderComponent` tests green, including the two new ones.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/app/features/finder/finder.component.ts src/app/features/finder/finder.component.html src/app/features/finder/finder.component.spec.ts
@@ -1080,7 +1080,7 @@ git commit -m "Add agency multi-select filter to the Finder view"
 
 **Files:** none (verification only)
 
-- [ ] **Step 1: Run the full test suite and build**
+- [x] **Step 1: Run the full test suite and build**
 
 ```bash
 npx ng test --watch=false
@@ -1092,7 +1092,7 @@ deno test supabase/functions/nps-sync/transform.test.ts
 
 Expected: all PASS, build succeeds with no errors. The `nps-sync` test run is a regression check confirming Task 1's migration didn't require any `nps-sync` code change.
 
-- [ ] **Step 2: Confirm the RIDB field-name assumptions against the live API**
+- [x] **Step 2: Confirm the RIDB field-name assumptions against the live API**
 
 This plan's transform (Task 4) was built from RIDB's published OpenAPI model plus a cross-confirmed real response example, not a live call with a real key (no key was available while planning). Once the `RIDB_API_KEY` secret from Task 5 Step 3 is set, run one manual request to sanity-check before trusting a full sync:
 
@@ -1103,7 +1103,7 @@ curl -s -H "apikey: $RIDB_API_KEY" -H "Accept: application/json" \
 
 Confirm the response has the `METADATA.RESULTS.TOTAL_COUNT` / `RECDATA` envelope, and that a `RECDATA[0]` entry has `FacilityID`, `FacilityLatitude`, `FacilityLongitude`, and an `ORGANIZATION` array with `OrgAbbrevName`. If any field name differs, fix `transform.ts`/`agency.ts` (Tasks 3–4) and their tests before relying on a real sync run — do not silently patch `index.ts` around a mismatch.
 
-- [ ] **Step 3: Manually invoke `ridb-sync` once and inspect the result**
+- [x] **Step 3: Manually invoke `ridb-sync` once and inspect the result**
 
 Invoke the deployed `ridb-sync` function (e.g. via the Supabase Dashboard's "Invoke" button, or `curl` with the anon/service key as a bearer token). Expected JSON body: `{"upserted": N, "skipped": M}` with `N > 0` for at least Wisconsin/Michigan/Minnesota (dense with national-forest and Corps-of-Engineers campgrounds per the root-cause analysis). Then verify in the database:
 
@@ -1113,7 +1113,7 @@ select agency, count(*) from public.campgrounds group by agency order by agency;
 
 Expected: `NPS` count unchanged from before this plan, plus new nonzero counts for `USFS`/`BLM`/`USACE`/`FWS` (BLM will likely be the smallest, per the midwest-analysis doc).
 
-- [ ] **Step 4: Manual end-to-end pass in the browser**
+- [x] **Step 4: Manual end-to-end pass in the browser**
 
 Run `npx ng serve`, open the Finder view.
 
@@ -1124,10 +1124,10 @@ Run `npx ng serve`, open the Finder view.
 5. Click into a RIDB-sourced campground's detail view (if one is linked from the table) — confirm nothing crashes on a `null` `parkCode`.
 6. Check the browser console for errors at every step above.
 
-- [ ] **Step 5: Schedule `ridb-sync` (manual, dashboard)**
+- [x] **Step 5: Schedule `ridb-sync` (manual, dashboard)**
 
 There is no in-repo cron artifact for `nps-sync` to copy (confirmed during planning — no `config.toml`, no scheduled workflow, no `pg_cron` migration exists anywhere in this repo). In the Supabase Dashboard, add a scheduled invocation for `ridb-sync` the same way `nps-sync`'s existing schedule is configured (check Edge Functions → `nps-sync` → its trigger/schedule settings, or Database → Cron Jobs, to see which mechanism is actually in use, then mirror it). A weekly cadence matches `nps-sync`'s (RIDB facility data changes about as rarely, per the design doc). Once found, consider a short follow-up note or migration documenting it in-repo so this stops being tribal knowledge — out of scope for this plan, but worth flagging to Shawn.
 
-- [ ] **Step 6: Report results**
+- [x] **Step 6: Report results**
 
 Confirm all steps above pass with no console errors before considering this plan complete. If any step fails, treat it as a bug against the specific task that introduced it, not a new task.
