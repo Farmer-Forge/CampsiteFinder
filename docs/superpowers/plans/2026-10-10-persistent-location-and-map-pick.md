@@ -1,6 +1,6 @@
 # Persistent Location, Device-Location Button & Map Pick — Implementation Plan
 
-> **For agentic workers:** Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** (1) The Finder's search location and filters survive navigating to other pages and a
 browser refresh. (2) A "Use my device location" button is always available. (3) Right-clicking the
@@ -32,34 +32,34 @@ same `loadNearest(coords)` path the manual lat/lng form already uses.
 ---
 
 ## Task 1: `FinderStateService`
-- [ ] Create `src/app/core/services/finder-state.service.ts` (`providedIn: 'root'`)
+- [x] Create `src/app/core/services/finder-state.service.ts` (`providedIn: 'root'`)
   - `FinderSnapshot { location: Coordinates; agencies: string[]; states: string[]; regions: string[]; parks: string[] | null; nearMeEnabled: boolean; radiusMiles: number }` (`parks: null` = "all")
   - `snapshot(): FinderSnapshot | null` — in-memory first, else parse + validate `sessionStorage['campsite-finder.finder']`
   - `save(snapshot)` — set in memory, write JSON to `sessionStorage` (try/catch)
-- [ ] Spec `finder-state.service.spec.ts`: round-trip; survives a new service instance via storage; invalid JSON / out-of-range lat / throwing `sessionStorage` all return `null` (or in-memory value) without throwing
+- [x] Spec `finder-state.service.spec.ts`: round-trip; survives a new service instance via storage; invalid JSON / out-of-range lat / throwing `sessionStorage` all return `null` (or in-memory value) without throwing
 
 ## Task 2: Finder restores and saves state
-- [ ] Inject `FinderStateService`; in `ngOnInit`, if a snapshot exists, apply its filter values and call `loadNearest(snapshot.location)`; otherwise current behavior (`loadNearest()` → geolocation)
-- [ ] After a successful `getNearest` in `loadNearest`, `save(...)` the current location + filters (parks saved as `null` when all are selected)
-- [ ] `loadParkCodes`: apply saved parks (intersected with available codes) instead of always selecting all
-- [ ] Specs: returning to Finder with saved state does **not** call `geolocation.getCurrentPosition`; restored filters are passed to `getNearest`; a failed load does not call `save`
+- [x] Inject `FinderStateService`; in `ngOnInit`, if a snapshot exists, apply its filter values and call `loadNearest(snapshot.location)`; otherwise current behavior (`loadNearest()` → geolocation)
+- [x] After a successful `getNearest` in `loadNearest`, `save(...)` the current location + filters (parks saved as `null` when all are selected)
+- [x] `loadParkCodes`: apply saved parks (intersected with available codes) instead of always selecting all
+- [x] Specs: returning to Finder with saved state does **not** call `geolocation.getCurrentPosition`; restored filters are passed to `getNearest`; a failed load does not call `save`
 
 ## Task 3: Always-available "Use my device location"
-- [ ] Rename the control "Use my current location" → **"Use my device location"** (location-controls row)
-- [ ] Error state: always show the button, including when `locationBlocked()`; keep the blocked guidance text alongside it
-- [ ] When a device lookup fails **while a search location already exists**, keep the current results and location; show the failure inline under the location controls (new `deviceLocationError` signal), with the blocked guidance when permission is `'denied'` — instead of swapping the page to the full error view
-- [ ] Blocked guidance text: short steps — "Click the icon left of the address bar → Site settings → Location → Allow, then press Use my device location again."
-- [ ] Specs: button rendered in both states; failure with an existing location keeps `campgrounds()` and shows the inline message; blocked state still shows the button
+- [x] Rename the control "Use my current location" → **"Use my device location"** (location-controls row)
+- [x] Error state: always show the button, including when `locationBlocked()`; keep the blocked guidance text alongside it
+- [x] When a device lookup fails **while a search location already exists**, keep the current results and location; show the failure inline under the location controls (new `deviceLocationError` signal), with the blocked guidance when permission is `'denied'` — instead of swapping the page to the full error view
+- [x] Blocked guidance text: short steps — "Click the icon left of the address bar → Site settings → Location → Allow, then press Use my device location again."
+- [x] Specs: button rendered in both states; failure with an existing location keeps `campgrounds()` and shows the inline message; blocked state still shows the button
 
 ## Task 4: Right-click "Search from here" on the map
-- [ ] `CampgroundMapComponent`: `@Input() allowLocationPick = false`, `@Output() locationPick = new EventEmitter<Coordinates>()`
-- [ ] In `onMapReady`, when `allowLocationPick`, register `map.on('contextmenu', …)`: open an `L.popup` at the clicked latlng containing the coordinates (4 dp) and a **"Search from here"** button (plain DOM, same pattern as `buildPopupContent`); clicking it closes the popup and emits `locationPick`. Leaflet suppresses the browser's own context menu once a `contextmenu` listener exists.
-- [ ] Finder template: `[allowLocationPick]="true"` and `(locationPick)="onMapLocationPick($event)"` → `loadNearest(coords)` (the existing manual-location path, so it also gets saved by Task 2)
-- [ ] Specs: no listener when `allowLocationPick` is false; contextmenu → popup → button click emits the coordinates; Finder handler calls `getNearest` with the picked point
-- [ ] Manual check: right-click on desktop Chrome; long-press on Android (expected to work); iOS Safari not expected to work (documented, not fixed)
+- [x] `CampgroundMapComponent`: `@Input() allowLocationPick = false`, `@Output() locationPick = new EventEmitter<Coordinates>()`
+- [x] In `onMapReady`, when `allowLocationPick`, register `map.on('contextmenu', …)`: open an `L.popup` at the clicked latlng containing the coordinates (4 dp) and a **"Search from here"** button (plain DOM, same pattern as `buildPopupContent`); clicking it closes the popup and emits `locationPick`. Leaflet suppresses the browser's own context menu once a `contextmenu` listener exists.
+- [x] Finder template: `[allowLocationPick]="true"` and `(locationPick)="onMapLocationPick($event)"` → `loadNearest(coords)` (the existing manual-location path, so it also gets saved by Task 2)
+- [x] Specs: no listener when `allowLocationPick` is false; contextmenu → popup → button click emits the coordinates; Finder handler calls `getNearest` with the picked point
+- [x] Manual check: right-click on desktop Chrome; long-press on Android (expected to work); iOS Safari not expected to work (documented, not fixed)
 
 ## Task 5: Verify and ship
-- [ ] `ng test` and `ng build` green
+- [x] `ng test` and `ng build` green
 - [ ] Manual pass in the browser: set a location by each of the three methods → go to Favorites → back to Finder → same location and filters, no geolocation prompt; refresh keeps them; a new tab starts fresh
 - [ ] Deploy to Vercel (after Shawn's go-ahead)
 
