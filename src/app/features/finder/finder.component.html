@@ -152,5 +152,11 @@
       Don't know your coordinates? Search "[your city] coordinates" or right-click your location in
       <a href="https://maps.google.com" target="_blank" rel="noopener">Google Maps</a> and copy the two numbers shown.
     </p>
+    <!-- This panel also renders on the error screen, where there's no map to click. -->
+    @if (!error()) {
+      <p class="manual-location-help map-pick-help">
+        <strong>Tip:</strong> right-click any spot on the map and choose <strong>Search from here</strong>.
+      </p>
+    }
   </div>
 </ng-template>

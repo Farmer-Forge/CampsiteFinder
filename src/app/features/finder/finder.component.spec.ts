@@ -625,5 +625,34 @@ describe('FinderComponent', () => {
     const map = fixture.debugElement.query((de) => de.name === 'app-campground-map');
     expect(map.componentInstance.allowLocationPick).toBe(true);
   });
+
+  describe('right-click tip in the location panel', () => {
+    async function render(): Promise<HTMLElement> {
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+      return fixture.nativeElement as HTMLElement;
+    }
+
+    it('explains right-click "Search from here" when the map is showing', async () => {
+      geolocationSpy.getCurrentPosition.mockResolvedValue({ lat: 44.3, lng: -68.2 });
+      campgroundsSpy.getNearest.mockResolvedValue([]);
+      const el = await render();
+
+      component.onToggleLocationForm();
+      fixture.detectChanges();
+
+      expect(el.querySelector('.map-pick-help')?.textContent).toContain('Search from here');
+    });
+
+    it('leaves the tip out on the error screen, where there is no map', async () => {
+      geolocationSpy.getCurrentPosition.mockRejectedValue(new Error('denied'));
+
+      const el = await render();
+
+      expect(el.querySelector('.manual-location')).toBeTruthy();
+      expect(el.querySelector('.map-pick-help')).toBeNull();
+    });
+  });
 });
 
