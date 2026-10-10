@@ -525,4 +525,80 @@ describe('FinderComponent', () => {
       expect(component.selectedParks).toEqual(['acad', 'yell']);
     });
   });
+
+  describe('device location button', () => {
+    async function render(): Promise<HTMLElement> {
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+      return fixture.nativeElement as HTMLElement;
+    }
+
+    function buttonTexts(el: HTMLElement): string[] {
+      return Array.from(el.querySelectorAll('button')).map((b) => b.textContent!.trim());
+    }
+
+    it('is offered next to the results', async () => {
+      geolocationSpy.getCurrentPosition.mockResolvedValue({ lat: 44.3, lng: -68.2 });
+      campgroundsSpy.getNearest.mockResolvedValue([]);
+
+      const el = await render();
+
+      expect(buttonTexts(el)).toContain('Use my device location');
+    });
+
+    it('is still offered in the error state when location is blocked', async () => {
+      geolocationSpy.getCurrentPosition.mockRejectedValue(new Error('denied'));
+      geolocationSpy.checkPermissionState.mockResolvedValue('denied');
+
+      const el = await render();
+
+      expect(buttonTexts(el)).toContain('Use my device location');
+      expect(el.textContent).toContain('Site settings');
+    });
+
+    it('keeps the current results when a device lookup fails after a location is set', async () => {
+      campgroundsSpy.getNearest.mockResolvedValue([{ id: '1', name: 'A' } as any]);
+      await component.loadNearest({ lat: 10, lng: 20 });
+      geolocationSpy.getCurrentPosition.mockRejectedValue(new Error('Location access was denied.'));
+      geolocationSpy.checkPermissionState.mockResolvedValue('denied');
+
+      await component.onRetryLocation();
+
+      expect(component.error()).toBeNull();
+      expect(component.deviceLocationError()).toBe('Location access was denied.');
+      expect(component.locationBlocked()).toBe(true);
+      expect(component.searchLocation()).toEqual({ lat: 10, lng: 20 });
+      expect(component.campgrounds().length).toBe(1);
+      expect(campgroundsSpy.getNearest).toHaveBeenCalledTimes(1);
+    });
+
+    it('shows the inline failure and blocked guidance under the location controls', async () => {
+      geolocationSpy.getCurrentPosition.mockResolvedValue({ lat: 44.3, lng: -68.2 });
+      campgroundsSpy.getNearest.mockResolvedValue([]);
+      const el = await render();
+      geolocationSpy.getCurrentPosition.mockRejectedValue(new Error('Location access was denied.'));
+      geolocationSpy.checkPermissionState.mockResolvedValue('denied');
+
+      await component.onRetryLocation();
+      fixture.detectChanges();
+
+      const inline = el.querySelector('.device-location-error');
+      expect(inline?.textContent).toContain('Location access was denied.');
+      expect(inline?.textContent).toContain('Site settings');
+    });
+
+    it('clears a previous device-lookup failure once a location loads', async () => {
+      campgroundsSpy.getNearest.mockResolvedValue([]);
+      await component.loadNearest({ lat: 10, lng: 20 });
+      geolocationSpy.getCurrentPosition.mockRejectedValue(new Error('timeout'));
+      await component.onRetryLocation();
+      expect(component.deviceLocationError()).toBe('timeout');
+
+      await component.loadNearest({ lat: 30, lng: 40 });
+
+      expect(component.deviceLocationError()).toBeNull();
+    });
+  });
 });
+

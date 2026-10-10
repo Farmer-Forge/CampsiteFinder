@@ -84,6 +84,12 @@
   margin-top: -6px;
 }
 
+.device-location-error {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .status-area {
   padding: 24px 32px;
   max-width: 720px;

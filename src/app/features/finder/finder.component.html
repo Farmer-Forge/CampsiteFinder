@@ -93,8 +93,16 @@
         <button type="button" class="rt-text-btn rt-text-btn--teal" (click)="onToggleLocationForm()">
           {{ showLocationForm() ? 'Cancel' : 'Change location' }}
         </button>
-        <button type="button" class="rt-text-btn rt-text-btn--teal" (click)="onRetryLocation()">Use my current location</button>
+        <button type="button" class="rt-text-btn rt-text-btn--teal" (click)="onRetryLocation()">Use my device location</button>
       </div>
+      @if (deviceLocationError()) {
+        <div class="device-location-error">
+          <div class="rt-message rt-message--error">{{ deviceLocationError() }}</div>
+          @if (locationBlocked()) {
+            <ng-container *ngTemplateOutlet="blockedHelp" />
+          }
+        </div>
+      }
       @if (showLocationForm()) {
         <ng-container *ngTemplateOutlet="manualLocation" />
       }
@@ -114,16 +122,22 @@
     @if (error()) {
       <div class="rt-message rt-message--error">{{ error() }}</div>
       @if (locationBlocked()) {
-        <div class="rt-message">
-          Location is blocked for this site. Check your browser's address-bar site settings to allow it, then try again.
-        </div>
-      } @else {
-        <button type="button" class="rt-text-btn rt-text-btn--teal retry" (click)="onRetryLocation()">Try location again</button>
+        <ng-container *ngTemplateOutlet="blockedHelp" />
       }
+      <button type="button" class="rt-text-btn rt-text-btn--teal retry" (click)="onRetryLocation()">Use my device location</button>
       <ng-container *ngTemplateOutlet="manualLocation" />
     }
   </div>
 }
+
+<!-- Once a site is blocked, the browser won't show its prompt again no
+     matter how often the page asks — only the user can undo it. -->
+<ng-template #blockedHelp>
+  <div class="rt-message">
+    Location is blocked for this site. Click the icon left of the address bar → Site settings → Location →
+    Allow, then press Use my device location again.
+  </div>
+</ng-template>
 
 <ng-template #manualLocation>
   <div class="rt-dashed-panel">

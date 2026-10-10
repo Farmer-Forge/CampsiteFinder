@@ -37,6 +37,10 @@ export class FinderComponent implements OnInit {
   // True only once the browser permission is known to be explicitly 'denied'
   // — that's the one state a "Try again" button can't do anything about.
   readonly locationBlocked = signal(false);
+  // A failed device lookup while a search location is already set: shown
+  // inline under the location controls instead of replacing the results
+  // with the full error view.
+  readonly deviceLocationError = signal<string | null>(null);
   readonly searchLocation = signal<Coordinates | null>(null);
   readonly showLocationForm = signal(false);
 
@@ -113,11 +117,19 @@ export class FinderComponent implements OnInit {
   async loadNearest(coords?: Coordinates): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
+    this.deviceLocationError.set(null);
     if (!coords) {
       this.locationBlocked.set(false);
     }
+    let location: Coordinates;
     try {
-      const location = coords ?? (await this.geolocation.getCurrentPosition());
+      location = coords ?? (await this.geolocation.getCurrentPosition());
+    } catch (err) {
+      await this.handleDeviceLocationFailure(err);
+      this.loading.set(false);
+      return;
+    }
+    try {
       this.searchLocation.set(location);
       const maxDistanceMeters = this.nearMeEnabled
         ? this.radiusMiles * METERS_PER_MILE
@@ -150,15 +162,22 @@ export class FinderComponent implements OnInit {
       });
     } catch (err) {
       this.error.set(err instanceof Error ? err.message : 'Unable to load nearby campgrounds.');
-      // Only a failed *browser* lookup implies anything about site
-      // permission — a manually submitted location failing (e.g. a network
-      // error) has nothing to do with geolocation.
-      if (!coords) {
-        const state = await this.geolocation.checkPermissionState();
-        this.locationBlocked.set(state === 'denied');
-      }
     } finally {
       this.loading.set(false);
+    }
+  }
+
+  // Only a failed *browser* lookup implies anything about site permission —
+  // a query failing for a known location (e.g. a network error) has nothing
+  // to do with geolocation, so that path never gets here.
+  private async handleDeviceLocationFailure(err: unknown): Promise<void> {
+    const message = err instanceof Error ? err.message : 'Your location could not be determined.';
+    const state = await this.geolocation.checkPermissionState();
+    this.locationBlocked.set(state === 'denied');
+    if (this.searchLocation()) {
+      this.deviceLocationError.set(message);
+    } else {
+      this.error.set(message);
     }
   }
 
