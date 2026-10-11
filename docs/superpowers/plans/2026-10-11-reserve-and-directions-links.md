@@ -41,7 +41,14 @@ RIDB-sourced row: RIDB leaves `FacilityReservationURL` blank) and 4,604 have an 
 - [x] Implement in `campground-detail-panel.component.ts`
 - [x] `npm test` passes
 
-## Task 3: Backfill production (needs explicit go-ahead)
-- [ ] Deploy `ridb-sync` and invoke it once
-- [ ] Verify: `select count(*) from campgrounds where source='ridb' and reservation_url <> ''` is non-zero
-- [ ] Merge to `main` (Vercel deploys the UI change)
+## Task 3: Backfill production (go-ahead given 2026-10-11)
+- [x] Deploy `ridb-sync` and invoke it once
+- [x] Verify: `select count(*) from campgrounds where source='ridb' and reservation_url <> ''` is non-zero (3 → 3,658)
+- [x] Merge to `main` (Vercel deploys the UI change)
+
+**Found during deploy:** production was still running `ridb-sync` v8, which predates the state
+parsing from the state/region-filters plan — `state` was NULL for every row, so the state filter was
+a no-op. This deploy shipped that parsing too. RIDB sends `AddressStateCode: ""` for some addresses,
+and `nearest_campgrounds` only treats NULL as "unknown, always include" (0014), so `resolveState` now
+maps `""` to NULL (67 rows would otherwise have been hidden by any state filter). NPS rows' `state`
+is still NULL — `nps-sync` was not redeployed.

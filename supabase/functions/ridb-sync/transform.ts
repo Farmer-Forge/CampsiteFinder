@@ -44,7 +44,9 @@ export interface CampgroundRow {
 function resolveState(addresses: RidbAddressRecord[] | undefined): string | null {
   if (!addresses || addresses.length === 0) return null;
   const physical = addresses.find((a) => a.FacilityAddressType === "Physical");
-  return (physical ?? addresses[0]).AddressStateCode ?? null;
+  // `||`, not `??`: RIDB sends "" for some addresses, and only NULL passes
+  // nearest_campgrounds' state filter as "unknown" (0014 migration).
+  return (physical ?? addresses[0]).AddressStateCode || null;
 }
 
 export function toCampgroundRow(facility: RidbFacilityRecord): CampgroundRow | null {

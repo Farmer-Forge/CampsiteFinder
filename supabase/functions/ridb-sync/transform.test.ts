@@ -256,3 +256,18 @@ Deno.test("toCampgroundRow prefers RIDB's own reservation URL over the built one
 
   assertEquals(row?.reservation_url, "https://example.org/reserve");
 });
+
+Deno.test("toCampgroundRow sets state to null when the address has an empty state code", () => {
+  const facility = {
+    FacilityID: "13",
+    FacilityName: "Blank State Campground",
+    FacilityLatitude: 44.0,
+    FacilityLongitude: -90.0,
+    ORGANIZATION: [{ OrgAbbrevName: "USFS" }],
+    FACILITYADDRESS: [{ FacilityAddressType: "Physical", AddressStateCode: "" }],
+  };
+
+  const row = toCampgroundRow(facility as any);
+
+  assertEquals(row?.state, null);
+});
