@@ -9,7 +9,11 @@ describe('FinderComponent', () => {
   let fixture: ComponentFixture<FinderComponent>;
   let component: FinderComponent;
   let geolocationSpy: { getCurrentPosition: ReturnType<typeof vi.fn>; checkPermissionState: ReturnType<typeof vi.fn> };
-  let campgroundsSpy: { getNearest: ReturnType<typeof vi.fn>; getParkCodes: ReturnType<typeof vi.fn> };
+  let campgroundsSpy: {
+    getNearest: ReturnType<typeof vi.fn>;
+    getParkCodes: ReturnType<typeof vi.fn>;
+    getParkNames: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(() => {
     // FinderStateService mirrors to sessionStorage, which outlives each
@@ -19,7 +23,11 @@ describe('FinderComponent', () => {
       getCurrentPosition: vi.fn(),
       checkPermissionState: vi.fn().mockResolvedValue('unsupported'),
     };
-    campgroundsSpy = { getNearest: vi.fn(), getParkCodes: vi.fn().mockResolvedValue([]) };
+    campgroundsSpy = {
+      getNearest: vi.fn(),
+      getParkCodes: vi.fn().mockResolvedValue([]),
+      getParkNames: vi.fn().mockResolvedValue({}),
+    };
 
     TestBed.configureTestingModule({
       imports: [FinderComponent],
@@ -261,6 +269,44 @@ describe('FinderComponent', () => {
 
     expect(component.parkCodes()).toEqual(['acad', 'yell']);
     expect(component.selectedParks).toEqual(['acad', 'yell']);
+  });
+
+  it('offers parks by name, sorted by name, falling back to the code', async () => {
+    geolocationSpy.getCurrentPosition.mockResolvedValue({ lat: 44.3, lng: -68.2 });
+    campgroundsSpy.getNearest.mockResolvedValue([]);
+    campgroundsSpy.getParkCodes.mockResolvedValue(['acad', 'newp', 'yell']);
+    campgroundsSpy.getParkNames.mockResolvedValue({ acad: 'Acadia', yell: 'Yellowstone' });
+
+    await component.ngOnInit();
+
+    expect(component.parkOptions()).toEqual([
+      { code: 'acad', name: 'Acadia' },
+      { code: 'newp', name: 'newp' },
+      { code: 'yell', name: 'Yellowstone' },
+    ]);
+  });
+
+  it('truncates park names longer than 30 characters', async () => {
+    geolocationSpy.getCurrentPosition.mockResolvedValue({ lat: 44.3, lng: -68.2 });
+    campgroundsSpy.getNearest.mockResolvedValue([]);
+    campgroundsSpy.getParkCodes.mockResolvedValue(['long']);
+    campgroundsSpy.getParkNames.mockResolvedValue({ long: 'A'.repeat(31) });
+
+    await component.ngOnInit();
+
+    expect(component.parkOptions()).toEqual([{ code: 'long', name: 'A'.repeat(29) + '…' }]);
+  });
+
+  it('still offers park codes when the park names fail to load', async () => {
+    geolocationSpy.getCurrentPosition.mockResolvedValue({ lat: 44.3, lng: -68.2 });
+    campgroundsSpy.getNearest.mockResolvedValue([]);
+    campgroundsSpy.getParkCodes.mockResolvedValue(['acad']);
+    campgroundsSpy.getParkNames.mockRejectedValue(new Error('boom'));
+
+    await component.ngOnInit();
+
+    expect(component.parkOptions()).toEqual([{ code: 'acad', name: 'acad' }]);
+    expect(component.selectedParks).toEqual(['acad']);
   });
 
   it('sends no park filter when all parks are selected', async () => {

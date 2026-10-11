@@ -105,6 +105,16 @@ export class CampgroundsService {
     return [...codes].sort();
   }
 
+  // Short NPS names ("Yellowstone") keyed by park code. Not every code is
+  // guaranteed a row — callers fall back to the code itself.
+  async getParkNames(): Promise<Record<string, string>> {
+    const { data, error } = await this.supabase.client.from('parks').select('park_code, name');
+
+    if (error) throw error;
+
+    return Object.fromEntries((data ?? []).map((row: any) => [row.park_code, row.name]));
+  }
+
   async searchByName(query: string): Promise<{ id: string; name: string }[]> {
     const { data, error } = await this.supabase.client
       .from('campgrounds')

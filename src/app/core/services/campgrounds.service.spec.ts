@@ -212,6 +212,32 @@ describe('CampgroundsService', () => {
     await expect(service.getParkCodes()).rejects.toThrow('boom');
   });
 
+  it('fetches park names keyed by park code', async () => {
+    const builder: any = { select: vi.fn() };
+    builder.select.mockReturnValue(builder);
+    builder.then = (resolve: any) =>
+      resolve({
+        data: [{ park_code: 'grsm', name: 'Great Smoky Mountains' }, { park_code: 'yell', name: 'Yellowstone' }],
+        error: null,
+      });
+    fromSpy.mockReturnValue(builder);
+
+    const names = await service.getParkNames();
+
+    expect(fromSpy).toHaveBeenCalledWith('parks');
+    expect(builder.select).toHaveBeenCalledWith('park_code, name');
+    expect(names).toEqual({ grsm: 'Great Smoky Mountains', yell: 'Yellowstone' });
+  });
+
+  it('throws when getParkNames errors', async () => {
+    const builder: any = { select: vi.fn() };
+    builder.select.mockReturnValue(builder);
+    builder.then = (resolve: any) => resolve({ data: null, error: new Error('boom') });
+    fromSpy.mockReturnValue(builder);
+
+    await expect(service.getParkNames()).rejects.toThrow('boom');
+  });
+
   it('throws when searchByName errors', async () => {
     const builder: any = {};
     ['select', 'ilike', 'limit'].forEach((method) => {

@@ -64,3 +64,21 @@ export function toCampgroundRow(record: NpsCampgroundRecord): CampgroundRow | nu
     contact: record.contacts ?? {},
   };
 }
+
+export interface NpsParkRecord {
+  parkCode: string;
+  name: string;
+}
+
+export interface ParkRow {
+  park_code: string;
+  name: string;
+}
+
+// `name` is NPS's short form ("Great Smoky Mountains"), not `fullName`
+// ("Great Smoky Mountains National Park") — it's what fits the Finder's
+// park filter.
+export function toParkRow(record: NpsParkRecord): ParkRow | null {
+  if (!record.parkCode || !record.name) return null;
+  return { park_code: record.parkCode, name: record.name };
+}

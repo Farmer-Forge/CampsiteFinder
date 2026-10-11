@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, computed, signal } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MultiSelectModule } from 'primeng/multiselect';
@@ -15,6 +15,11 @@ export const METERS_PER_MILE = 1609.34;
 // "no count cap" branch and returns every matching row, however large the
 // dataset grows. This is how "Show all" is implemented, not a real radius.
 export const SHOW_ALL_RADIUS_M = 20_038_000;
+const PARK_NAME_MAX = 30;
+
+function truncate(text: string, max: number): string {
+  return text.length > max ? text.slice(0, max - 1) + '…' : text;
+}
 
 @Component({
   selector: 'app-finder',
@@ -66,6 +71,14 @@ export class FinderComponent implements OnInit {
   // whatever NPS units are actually present in the data — so this list is
   // fetched once rather than hardcoded, and starts empty until it resolves.
   readonly parkCodes = signal<string[]>([]);
+  readonly parkNames = signal<Record<string, string>>({});
+  // Dropdown options: the value stays the code (what's saved and queried);
+  // only the label is the park's name, capped to keep the panel narrow.
+  readonly parkOptions = computed(() =>
+    this.parkCodes()
+      .map((code) => ({ code, name: truncate(this.parkNames()[code] ?? code, PARK_NAME_MAX) }))
+      .sort((a, b) => a.name.localeCompare(b.name)),
+  );
   selectedParks: string[] = [];
 
   manualLat: number | null = null;
@@ -106,8 +119,13 @@ export class FinderComponent implements OnInit {
   // `savedParks` null (or absent) means "all parks", the default.
   private async loadParkCodes(savedParks: string[] | null = null): Promise<void> {
     try {
-      const codes = await this.campgroundsService.getParkCodes();
+      const [codes, names] = await Promise.all([
+        this.campgroundsService.getParkCodes(),
+        // Names are cosmetic — if they fail, the codes still work as labels.
+        this.campgroundsService.getParkNames().catch(() => ({})),
+      ]);
       this.parkCodes.set(codes);
+      this.parkNames.set(names);
       this.selectedParks = savedParks ? codes.filter((c) => savedParks.includes(c)) : [...codes];
     } catch {
       // Non-critical: the park filter just ends up with nothing to offer.

@@ -1,5 +1,5 @@
 import { assertEquals } from "jsr:@std/assert";
-import { toCampgroundRow } from "./transform.ts";
+import { toCampgroundRow, toParkRow } from "./transform.ts";
 
 Deno.test("toCampgroundRow converts an NPS record into a PostGIS-ready row", () => {
   const record = {
@@ -109,4 +109,15 @@ Deno.test("toCampgroundRow sets state to null when no address is present", () =>
   const row = toCampgroundRow(record as any);
 
   assertEquals(row?.state, null);
+});
+
+Deno.test("toParkRow keeps the park code and short name", () => {
+  const record = { parkCode: "grsm", name: "Great Smoky Mountains", fullName: "Great Smoky Mountains National Park" };
+
+  assertEquals(toParkRow(record), { park_code: "grsm", name: "Great Smoky Mountains" });
+});
+
+Deno.test("toParkRow returns null when the code or name is missing", () => {
+  assertEquals(toParkRow({ parkCode: "grsm", name: "" }), null);
+  assertEquals(toParkRow({ parkCode: "", name: "Great Smoky Mountains" }), null);
 });

@@ -42,7 +42,9 @@
       />
       @if (parkCodes().length > 0) {
         <p-multiselect
-          [options]="parkCodes()"
+          [options]="parkOptions()"
+          optionLabel="name"
+          optionValue="code"
           [(ngModel)]="selectedParks"
           [selectAll]="selectedParks.length === parkCodes().length"
           (onSelectAllChange)="onToggleAllParks($event.checked)"
