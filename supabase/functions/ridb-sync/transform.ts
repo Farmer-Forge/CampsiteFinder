@@ -12,6 +12,7 @@ export interface RidbFacilityRecord {
   FacilityLatitude: number | null;
   FacilityLongitude: number | null;
   FacilityReservationURL?: string;
+  Reservable?: boolean;
   FacilityDirections?: string;
   FacilityPhone?: string;
   FacilityEmail?: string;
@@ -81,7 +82,12 @@ export function toCampgroundRow(facility: RidbFacilityRecord): CampgroundRow | n
     source: "ridb",
     amenities: {},
     fees: [],
-    reservation_url: facility.FacilityReservationURL ?? "",
+    // RIDB leaves FacilityReservationURL blank for campgrounds booked on
+    // recreation.gov itself, whose pages are keyed by the same FacilityID.
+    reservation_url: facility.FacilityReservationURL ||
+      (facility.Reservable
+        ? `https://www.recreation.gov/camping/campgrounds/${facility.FacilityID}`
+        : ""),
     // RIDB's FacilityDirections is free-text driving directions prose (e.g.
     // "Take Forest Road 13 north."), not a URL — do not put it in a field
     // the UI renders as a clickable href.

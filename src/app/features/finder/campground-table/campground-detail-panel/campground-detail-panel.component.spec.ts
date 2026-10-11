@@ -81,4 +81,22 @@ describe('CampgroundDetailPanelComponent', () => {
     expect(links.some((a) => a.href === 'https://recreation.gov/camping/1')).toBe(true);
     expect(links.some((a) => a.href === 'https://maps.example/1')).toBe(true);
   });
+
+  it('omits the reserve link when there is no reservation URL', () => {
+    setCampground({ reservationUrl: '' });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).not.toContain('Reserve');
+  });
+
+  it('falls back to Google Maps directions from the coordinates when there is no directions URL', () => {
+    setCampground({ directionsUrl: '', lat: 30.39, lng: -88.79 });
+    fixture.detectChanges();
+
+    const links: HTMLAnchorElement[] = Array.from(fixture.nativeElement.querySelectorAll('a'));
+    const directions = links.find((a) => a.textContent?.trim() === 'Directions');
+    expect(directions?.href).toBe(
+      'https://www.google.com/maps/dir/?api=1&destination=30.39,-88.79',
+    );
+  });
 });

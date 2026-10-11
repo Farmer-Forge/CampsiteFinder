@@ -209,3 +209,50 @@ Deno.test("toCampgroundRow sets state to null when no address is present", () =>
 
   assertEquals(row?.state, null);
 });
+
+Deno.test("toCampgroundRow builds a recreation.gov URL for a reservable facility with no reservation URL", () => {
+  const facility = {
+    FacilityID: "233118",
+    FacilityName: "Birch Creek Campground",
+    FacilityLatitude: 46.1234,
+    FacilityLongitude: -89.5678,
+    FacilityReservationURL: "",
+    Reservable: true,
+    ORGANIZATION: [{ OrgID: "131", OrgName: "USDA Forest Service", OrgAbbrevName: "FS" }],
+  };
+
+  const row = toCampgroundRow(facility);
+
+  assertEquals(row?.reservation_url, "https://www.recreation.gov/camping/campgrounds/233118");
+});
+
+Deno.test("toCampgroundRow leaves reservation_url empty for a non-reservable facility with no reservation URL", () => {
+  const facility = {
+    FacilityID: "233118",
+    FacilityName: "Birch Creek Campground",
+    FacilityLatitude: 46.1234,
+    FacilityLongitude: -89.5678,
+    Reservable: false,
+    ORGANIZATION: [{ OrgID: "131", OrgName: "USDA Forest Service", OrgAbbrevName: "FS" }],
+  };
+
+  const row = toCampgroundRow(facility);
+
+  assertEquals(row?.reservation_url, "");
+});
+
+Deno.test("toCampgroundRow prefers RIDB's own reservation URL over the built one", () => {
+  const facility = {
+    FacilityID: "233118",
+    FacilityName: "Birch Creek Campground",
+    FacilityLatitude: 46.1234,
+    FacilityLongitude: -89.5678,
+    FacilityReservationURL: "https://example.org/reserve",
+    Reservable: true,
+    ORGANIZATION: [{ OrgID: "131", OrgName: "USDA Forest Service", OrgAbbrevName: "FS" }],
+  };
+
+  const row = toCampgroundRow(facility);
+
+  assertEquals(row?.reservation_url, "https://example.org/reserve");
+});
